@@ -411,9 +411,13 @@ body { font-family: Arial, Helvetica, sans-serif; }
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     
-    // Caminho da base de dados para este jogador
-    const dbRef = ref(db, 'fichas/jogador1_status'); 
+// Captura o parâmetro "?player=" do link acessado
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('player') || 'jogador_teste';
 
+// Monta o caminho dinâmico na árvore do Firebase
+const dbRef = ref(db, `fichas/${playerName}_status`);
+   
     const defaultValues = {
         vida: { current: 28, maximum: 28 },
         sanidade: { current: 49, maximum: 65 },
