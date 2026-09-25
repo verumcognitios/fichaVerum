@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/* =====================================================
+   CONFIGURAÇÃO DO FUNDO
+   ===================================================== */
+:root {
+    color-scheme: light dark;
+}
+
+/* MODO ESCURO */
+html, body {
+    background-color: #191919 !important;
+}
+
+/* MODO CLARO */
+@media (prefers-color-scheme: light) {
+    html, body { background-color: #ffffff !important; }
+}
+
+/* =====================================================
+   CONFIGURAÇÃO GERAL
+   ===================================================== */
+* { box-sizing: border-box; }
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    min-height: 100%;
+}
+body { font-family: Arial, Helvetica, sans-serif; }
+
+/* =====================================================
+   CONTAINER
+   ===================================================== */
+.status-container {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* =====================================================
+   STATUS
+   ===================================================== */
+.status {
+    width: 100%;
+    background: #373737;
+    border-radius: 9px;
+    padding: 17px 17px 16px;
+    margin-bottom: 12px;
+    --status-color: #ffffff;
+}
+
+/* =====================================================
+   MODO CLARO
+   ===================================================== */
+@media (prefers-color-scheme: light) {
+    .status { background: #eeeeee; }
+    .bar { background: #d8d8d8; }
+}
+
+/* =====================================================
+   CORES
+   ===================================================== */
+.vida { --status-color: #ff4b4b; }
+.sanidade { --status-color: #318cff; }
+.empenho { --status-color: #27b879; }
+.ocultismo { --status-color: #a958e8; }
+
+/* =====================================================
+   CABEÇALHO
+   ===================================================== */
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 11px;
+    color: var(--status-color);
+}
+.status-icon {
+    width: 17px;
+    height: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--status-color);
+}
+.status-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+.status-name {
+    color: var(--status-color);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+
+/* =====================================================
+   LINHA DA BARRA
+   ===================================================== */
+.bar-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+}
+
+/* =====================================================
+   BARRA
+   ===================================================== */
+.bar {
+    flex: 1;
+    height: 9px;
+    background: #242424;
+    border-radius: 20px;
+    overflow: hidden;
+}
+.bar-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--status-color);
+    border-radius: 20px;
+    transition: width 0.18s ease;
+}
+
+/* =====================================================
+   CONTROLES DOS VALORES
+   ===================================================== */
+.values {
+    display: grid;
+    grid-template-columns: 18px 32px 18px 9px 30px;
+    align-items: center;
+    justify-content: end;
+    width: 117px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+/* =====================================================
+   BOTÕES
+   ===================================================== */
+.adjust-button {
+    width: 0px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 0px;
+    background: transparent;
+    color: var(--status-color);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 12px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.12s ease, background 0.12s ease;
+}
+.adjust-button:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.07);
+}
+.adjust-button:active {
+    background: rgba(255,255,255,0.12);
+}
+.decrease { grid-column: 1; }
+.increase { grid-column: 3; }
+
+/* =====================================================
+   VALOR ATUAL E MÁXIMO
+   ===================================================== */
+.current, .maximum {
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--status-color);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+}
+.current {
+    grid-column: 2;
+    width: 36px !important;
+    text-align: center;
+}
+.maximum {
+    grid-column: 5;
+    width: 36px !important;
+    text-align: left;
+}
+.value-input::-webkit-inner-spin-button,
+.value-input::-webkit-outer-spin-button {
+    opacity: 0;
+}
+
+/* =====================================================
+   SEPARADOR
+   ===================================================== */
+.separator {
+    grid-column: 4;
+    width: 9px;
+    color: var(--status-color);
+    font-size: 17px;
+    text-align: left;
+}
+
+/* =====================================================
+   CONDIÇÕES
+   ===================================================== */
+.conditions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 11px;
+    margin-left: 24px;
+    flex-wrap: wrap;
+}
+.condition {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--status-color);
+    font-size: 10px;
+    font-weight: normal;
+    cursor: pointer;
+    user-select: none;
+}
+.condition input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #aaa;
+    border-radius: 2px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.condition input:hover { border-color: var(--status-color); }
+.condition input:checked {
+    background: var(--status-color);
+    border-color: var(--status-color);
+}
+.condition input:checked::after {
+    content: "x";
+    position: absolute;
+    left: 2px;
+    top: -3px;
+    color: #ffffff;
+    font-size: 13px;
+}
+
+/* =====================================================
+   RESPONSIVO
+   ===================================================== */
+@media (max-width: 500px) {
+    .status { padding: 16px 14px; }
+    .bar-wrapper { gap: 7px; }
+    .values { grid-template-columns: 17px 33px 17px 8px 33px; width: 108px; }
+    .current, .maximum { width: 33px !important; }
+    .conditions { gap: 10px; margin-left: 21px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="status-container">
+
+<!-- =====================================================
+     VIDA
+     ===================================================== -->
+<div class="status vida" data-status="vida">
+    <div class="status-header">
+        <span class="status-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" fill="currentColor"/>
+            </svg>
+        </span>
+        <span class="status-name">SAÚDE</span>
+    </div>
+    <div class="bar-wrapper">
+        <div class="bar"><div class="bar-fill"></div></div>
+        <div class="values">
+            <button class="adjust-button decrease" type="button">−</button>
+            <input class="value-input current" type="number" min="0">
+            <button class="adjust-button increase" type="button">+</button>
+            <span class="separator">/</span>
+            <input class="value-input maximum" type="number" min="1">
+        </div>
+    </div>
+    <div class="conditions">
+        <label class="condition"><input type="checkbox" data-condition="inconsciente"><span>INCONSCIENTE</span></label>
+        <label class="condition"><input type="checkbox" data-condition="morrendo"><span>MORRENDO</span></label>
+        <label class="condition"><input type="checkbox" data-condition="morto"><span>MORTO</span></label>
+    </div>
+</div>
+
+<!-- =====================================================
+     SANIDADE
+     ===================================================== -->
+<div class="status sanidade" data-status="sanidade">
+    <div class="status-header">
+        <span class="status-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M9.5 3.5A3.5 3.5 0 0 0 6 7a3.5 3.5 0 0 0-2 6.35A3.5 3.5 0 0 0 6.5 20H9v-3.5a2 2 0 0 0-2-2H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14.5 3.5A3.5 3.5 0 0 1 18 7a3.5 3.5 0 0 1 2 6.35A3.5 3.5 0 0 1 17.5 20H15v-3.5a2 2 0 0 1 2-2h1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 7.5c1.2 0 2 .8 2 2v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M15 7.5c-1.2 0-2 .8-2 2v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M11 11h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </span>
+        <span class="status-name">SANIDADE</span>
+    </div>
+    <div class="bar-wrapper">
+        <div class="bar"><div class="bar-fill"></div></div>
+        <div class="values">
+            <button class="adjust-button decrease" type="button">−</button>
+            <input class="value-input current" type="number" min="0">
+            <button class="adjust-button increase" type="button">+</button>
+            <span class="separator">/</span>
+            <input class="value-input maximum" type="number" min="1">
+        </div>
+    </div>
+    <div class="conditions">
+        <label class="condition"><input type="checkbox" data-condition="insano"><span>INSANO</span></label>
+    </div>
+</div>
+
+<!-- =====================================================
+     EMPENHO
+     ===================================================== -->
+<div class="status empenho" data-status="empenho">
+    <div class="status-header">
+        <span class="status-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="currentColor"/>
+            </svg>
+        </span>
+        <span class="status-name">ESFORÇO</span>
+    </div>
+    <div class="bar-wrapper">
+        <div class="bar"><div class="bar-fill"></div></div>
+        <div class="values">
+            <button class="adjust-button decrease" type="button">−</button>
+            <input class="value-input current" type="number" min="0">
+            <button class="adjust-button increase" type="button">+</button>
+            <span class="separator">/</span>
+            <input class="value-input maximum" type="number" min="1">
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     OCULTISMO
+     ===================================================== -->
+<div class="status ocultismo" data-status="ocultismo">
+    <div class="status-header">
+        <span class="status-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            </svg>
+        </span>
+        <span class="status-name">OCULTISMO</span>
+    </div>
+    <div class="bar-wrapper">
+        <div class="bar"><div class="bar-fill"></div></div>
+        <div class="values">
+            <button class="adjust-button decrease" type="button">−</button>
+            <input class="value-input current" type="number" min="0">
+            <button class="adjust-button increase" type="button">+</button>
+            <span class="separator">/</span>
+            <input class="value-input maximum" type="number" min="1">
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- =====================================================
+     SCRIPT FIREBASE (TEMPO REAL)
+     ===================================================== -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Credenciais fornecidas
+    const firebaseConfig = {
+        apiKey: "AIzaSyD2qEEAPbzP1RFVnx2ijnEyCXB3VWzfz-8",
+        authDomain: "ficha-verum.firebaseapp.com",
+        databaseURL: "https://ficha-verum-default-rtdb.firebaseio.com",
+        projectId: "ficha-verum",
+        storageBucket: "ficha-verum.firebasestorage.app",
+        messagingSenderId: "281172832426",
+        appId: "1:281172832426:web:85442662439544144fa0d3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    // Caminho da base de dados para este jogador
+    const dbRef = ref(db, 'fichas/jogador1_status'); 
+
+    const defaultValues = {
+        vida: { current: 28, maximum: 28 },
+        sanidade: { current: 49, maximum: 65 },
+        empenho: { current: 92, maximum: 99 },
+        ocultismo: { current: 18, maximum: 18 }
+    };
+
+    let localData = { values: defaultValues, conditions: {} };
+    let isInitialized = false;
+
+    // Listener que recebe as alterações na nuvem em tempo real
+    onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        
+        if (data) {
+            localData = data;
+        } else {
+            set(dbRef, localData); 
+        }
+
+        updateUIFromData();
+        isInitialized = true;
+    });
+
+    // Função que guarda os dados na base do Firebase
+    function saveData() {
+        if (!isInitialized) return;
+
+        const dataToSave = { values: {}, conditions: {} };
+
+        document.querySelectorAll(".status").forEach(status => {
+            const name = status.dataset.status;
+
+            dataToSave.values[name] = {
+                current: Number(status.querySelector(".current").value),
+                maximum: Number(status.querySelector(".maximum").value)
+            };
+
+            status.querySelectorAll("[data-condition]").forEach(box => {
+                const condition = box.dataset.condition;
+                if (!dataToSave.conditions[name]) {
+                    dataToSave.conditions[name] = {};
+                }
+                dataToSave.conditions[name][condition] = box.checked;
+            });
+        });
+
+        set(dbRef, dataToSave);
+    }
+
+    // Função que atualiza o ecrã sem interferir com quem está a escrever no momento
+    function updateUIFromData() {
+        document.querySelectorAll(".status").forEach(status => {
+            const name = status.dataset.status;
+            const savedValues = localData.values[name] || defaultValues[name];
+
+            const currentInput = status.querySelector(".current");
+            const maximumInput = status.querySelector(".maximum");
+            
+            if (document.activeElement !== currentInput) {
+                currentInput.value = savedValues.current;
+            }
+            if (document.activeElement !== maximumInput) {
+                maximumInput.value = savedValues.maximum;
+            }
+
+            const savedConditions = localData.conditions?.[name] || {};
+            status.querySelectorAll("[data-condition]").forEach(box => {
+                box.checked = savedConditions[box.dataset.condition] || false;
+            });
+
+            updateBarVisuals(status);
+        });
+    }
+
+    // Calcula e renderiza a largura das barras de estado
+    function updateBarVisuals(status) {
+        const currentInput = status.querySelector(".current");
+        const maximumInput = status.querySelector(".maximum");
+        const fill = status.querySelector(".bar-fill");
+
+        let current = Number(currentInput.value);
+        let maximum = Number(maximumInput.value);
+
+        if (isNaN(current) || current < 0) {
+            current = 0;
+            currentInput.value = 0;
+        }
+        if (isNaN(maximum) || maximum < 1) {
+            maximum = 1;
+            maximumInput.value = 1;
+        }
+
+        let percentage = (current / maximum) * 100;
+        percentage = Math.max(0, Math.min(100, percentage));
+        fill.style.width = percentage + "%";
+    }
+
+    // Altera os valores numéricos com os botões + e -
+    function changeValue(status, amount) {
+        const input = status.querySelector(".current");
+        let value = Number(input.value);
+        
+        if (isNaN(value)) value = 0;
+        
+        value = Math.max(0, value + amount);
+        input.value = value;
+        
+        updateBarVisuals(status);
+        saveData();
+    }
+
+    // Atribuição dos Event Listeners aos botões e inputs
+    document.querySelectorAll(".status").forEach(status => {
+        status.querySelector(".decrease").addEventListener("click", () => changeValue(status, -1));
+        status.querySelector(".increase").addEventListener("click", () => changeValue(status, 1));
+
+        status.querySelectorAll(".current, .maximum").forEach(input => {
+            input.addEventListener("change", () => {
+                updateBarVisuals(status);
+                saveData();
+            });
+        });
+
+        status.querySelectorAll("[data-condition]").forEach(box => {
+            box.addEventListener("change", saveData);
+        });
+    });
+</script>
+
+</body>
+</html>
