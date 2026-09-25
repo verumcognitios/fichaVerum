@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/* =====================================================
+   CONFIGURAÇÃO GERAL E FUNDO
+   ===================================================== */
+:root {
+    color-scheme: light dark;
+}
+html, body {
+    background-color: #191919 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    min-height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+    html, body {
+        background-color: #ffffff !important;
+    }
+}
+* {
+    box-sizing: border-box;
+}
+
+.status-container {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+/* =====================================================
+   ESTILO DO BLOCO PRINCIPAL
+   ===================================================== */
+.status {
+    width: 100%;
+    background: #373737;
+    border-radius: 9px;
+    padding: 17px 17px 16px;
+    margin-bottom: 12px;
+    --status-color: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+    .status { background: #eeeeee; }
+}
+
+/* =====================================================
+   CABEÇALHO DO BLOCO
+   ===================================================== */
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 15px;
+    color: var(--status-color);
+}
+.status-icon {
+    width: 17px;
+    height: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--status-color);
+}
+.status-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+    fill: currentColor;
+}
+.status-name {
+    color: var(--status-color);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+
+/* =====================================================
+   BARRA DE PESQUISA
+   ===================================================== */
+.search-wrapper {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.condition-input {
+    width: 100%;
+    background: #242424;
+    border: 1px solid transparent;
+    color: #ffffff;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.condition-input:focus {
+    border-color: #555555;
+}
+@media (prefers-color-scheme: light) {
+    .condition-input {
+        background: #d8d8d8;
+        color: #191919;
+    }
+}
+
+/* =====================================================
+   LISTA DE SUGESTÕES (DROPDOWN)
+   ===================================================== */
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #2a2a2a;
+    border-radius: 6px;
+    margin-top: 5px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+.suggestion-item {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #dddddd;
+    cursor: pointer;
+    border-bottom: 1px solid #3a3a3a;
+}
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover {
+    background: #3a3a3a;
+    color: #ffffff;
+}
+
+/* =====================================================
+   TOOLTIP FLUTUANTE GLOBAL (Ao pesquisar)
+   ===================================================== */
+.search-tooltip {
+    position: fixed;
+    background: #191919;
+    color: #cccccc;
+    border: 1px solid #444;
+    padding: 10px 12px;
+    border-radius: 6px;
+    width: 260px;
+    font-size: 11px;
+    line-height: 1.5;
+    z-index: 9999;
+    display: none;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+@media (prefers-color-scheme: light) {
+    .search-tooltip {
+        background: #ffffff;
+        color: #333333;
+        border-color: #cccccc;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+}
+
+/* =====================================================
+   CONDIÇÕES ATIVAS (BLOCOS SALVOS)
+   ===================================================== */
+.active-conditions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cond-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 12px;
+}
+@media (prefers-color-scheme: light) {
+    .cond-card {
+        background: rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+}
+
+.cond-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.cond-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+@media (prefers-color-scheme: light) {
+    .cond-title { color: #191919; }
+}
+
+.cond-remove {
+    cursor: pointer;
+    color: #ff4b4b;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+    transition: color 0.15s;
+}
+.cond-remove:hover { color: #ff7676; }
+
+.cond-desc {
+    font-size: 11px;
+    color: #aaaaaa;
+    line-height: 1.4;
+}
+@media (prefers-color-scheme: light) {
+    .cond-desc { color: #555555; }
+}
+</style>
+</head>
+<body>
+
+<div class="status-container">
+
+    <div class="status">
+        <div class="status-header">
+            <span class="status-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h1v2c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2h1c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm-3 8.5c-.83 0-1.5-.67-1.5-1.5S8.17 7.5 9 7.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm6 0c-.83 0-1.5-.67-1.5-1.5S14.17 7.5 15 7.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+            </span>
+            <span class="status-name">CONDIÇÕES</span>
+        </div>
+
+        <div class="search-wrapper">
+            <input type="text" id="conditionSearch" class="condition-input" placeholder="Pesquisar condição (ex: Abalado)..." autocomplete="off">
+            <div id="suggestionsList" class="suggestions-list"></div>
+        </div>
+
+        <div id="activeConditions" class="active-conditions">
+        </div>
+    </div>
+
+</div>
+
+<div id="globalTooltip" class="search-tooltip"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+/* =====================================================
+   BANCO DE DADOS DE CONDIÇÕES
+   Para adicionar mais condições, basta copiar o bloco 
+   entre { } e adicionar à lista, separando por vírgula.
+   ===================================================== */
+const conditionsDB = [
+    {
+        id: "abalado",
+        nome: "ABALADO",
+        desc: "O personagem tem 10 ou menos Pontos de Sanidade, simbolizando que está no limite de seu equilíbrio mental. Enquanto Abalado, o personagem apresenta comportamentos paranóicos constantes, recebendo a condição Atento; no entanto, dormir é uma atividade apavorante, sendo preciso sucesso em um teste de INT; se falhar, não consegue dormir, recebendo a respectiva Condição de Sono."
+    },
+    {
+        id: "abatido",
+        nome: "ABATIDO",
+        desc: "Recebe duas desvantagens em testes mentais (POD, INT, EDU e Perícias Cognitivas)."
+    }
+];
+
+// Configuração Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyD2qEEAPbzP1RFVnx2ijnEyCXB3VWzfz-8",
+    authDomain: "ficha-verum.firebaseapp.com",
+    databaseURL: "https://ficha-verum-default-rtdb.firebaseio.com",
+    projectId: "ficha-verum",
+    storageBucket: "ficha-verum.firebasestorage.app",
+    messagingSenderId: "281172832426",
+    appId: "1:281172832426:web:85442662439544144fa0d3"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Caminho dinâmico para cada jogador
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('player') || 'jogador_teste';
+const dbRef = ref(db, `fichas/${playerName}_condicoes`);
+
+/* =====================================================
+   VARIÁVEIS DE CONTROLE
+   ===================================================== */
+let activeConditionsIds = [];
+let isInitialized = false;
+
+const searchInput = document.getElementById("conditionSearch");
+const suggestionsList = document.getElementById("suggestionsList");
+const activeConditionsContainer = document.getElementById("activeConditions");
+const globalTooltip = document.getElementById("globalTooltip");
+
+/* =====================================================
+   FIREBASE SYNC
+   ===================================================== */
+onValue(dbRef, (snapshot) => {
+    const data = snapshot.val();
+    activeConditionsIds = data || [];
+    renderActiveConditions();
+    isInitialized = true;
+});
+
+function saveActiveConditions() {
+    if (!isInitialized) return;
+    set(dbRef, activeConditionsIds);
+}
+
+/* =====================================================
+   RENDERIZAR OS BLOCOS
+   ===================================================== */
+function renderActiveConditions() {
+    activeConditionsContainer.innerHTML = ""; 
+
+    activeConditionsIds.forEach(id => {
+        const condition = conditionsDB.find(c => c.id === id);
+        if (!condition) return;
+
+        const card = document.createElement("div");
+        card.className = "cond-card";
+        card.innerHTML = `
+            <div class="cond-card-header">
+                <span class="cond-title">${condition.nome}</span>
+                <span class="cond-remove" data-id="${condition.id}">×</span>
+            </div>
+            <div class="cond-desc">${condition.desc}</div>
+        `;
+        
+        activeConditionsContainer.appendChild(card);
+    });
+
+    document.querySelectorAll(".cond-remove").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+            removeCondition(e.target.getAttribute("data-id"));
+        });
+    });
+}
+
+function addCondition(id) {
+    if (!activeConditionsIds.includes(id)) {
+        activeConditionsIds.push(id);
+        saveActiveConditions();
+    }
+    searchInput.value = "";
+    suggestionsList.style.display = "none";
+    globalTooltip.style.display = "none";
+}
+
+function removeCondition(id) {
+    activeConditionsIds = activeConditionsIds.filter(condId => condId !== id);
+    saveActiveConditions();
+}
+
+/* =====================================================
+   LÓGICA DA PESQUISA COM TOOLTIP FLUTUANTE
+   ===================================================== */
+searchInput.addEventListener("input", function(e) {
+    const query = e.target.value.toLowerCase().trim();
+    
+    if (query.length === 0) {
+        suggestionsList.style.display = "none";
+        return;
+    }
+
+    const filtered = conditionsDB.filter(c => 
+        c.nome.toLowerCase().includes(query) && 
+        !activeConditionsIds.includes(c.id)
+    );
+
+    suggestionsList.innerHTML = "";
+
+    if (filtered.length > 0) {
+        filtered.forEach(c => {
+            const item = document.createElement("div");
+            item.className = "suggestion-item";
+            item.textContent = c.nome;
+            
+            item.addEventListener("mousemove", (event) => {
+                globalTooltip.textContent = c.desc;
+                globalTooltip.style.display = "block";
+                
+                let x = event.clientX + 15;
+                let y = event.clientY + 15;
+                
+                const rect = globalTooltip.getBoundingClientRect();
+                
+                if (x + rect.width > window.innerWidth) {
+                    x = event.clientX - rect.width - 15;
+                }
+                
+                if (y + rect.height > window.innerHeight) {
+                    y = event.clientY - rect.height - 15;
+                }
+                
+                globalTooltip.style.left = x + "px";
+                globalTooltip.style.top = y + "px";
+            });
+
+            item.addEventListener("mouseleave", () => {
+                globalTooltip.style.display = "none";
+            });
+
+            item.addEventListener("click", () => addCondition(c.id));
+            suggestionsList.appendChild(item);
+        });
+        suggestionsList.style.display = "block";
+    } else {
+        suggestionsList.style.display = "none";
+    }
+});
+
+document.addEventListener("click", function(e) {
+    if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+        suggestionsList.style.display = "none";
+        globalTooltip.style.display = "none";
+    }
+});
+</script>
+</body>
+</html>
