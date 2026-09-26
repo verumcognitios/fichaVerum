@@ -29,7 +29,7 @@ html, body {
 
 .status-container {
     width: 100%;
-    max-width: 800px; /* Aumentado levemente para comportar grids maiores */
+    max-width: 800px;
     margin: 0 auto;
     padding: 10px;
 }
@@ -72,7 +72,7 @@ html, body {
 }
 
 /* =====================================================
-   PAINÉIS DE FORMULÁRIOS (ITENS E BOLSAS)
+   PAINEL DE FORMULÁRIO (CRIAR ITEM)
    ===================================================== */
 .form-panel {
     background: rgba(0,0,0,0.2);
@@ -120,18 +120,8 @@ html, body {
 }
 .btn-add:hover { opacity: 0.8; }
 
-.btn-add-secondary {
-    background: #318cff !important;
-    border: none !important;
-    font-weight: bold;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    color: #fff !important;
-}
-.btn-add-secondary:hover { opacity: 0.8; }
-
 /* =====================================================
-   INVENTÁRIOS E GRID (CONTAINERS)
+   INVENTÁRIO E GRID
    ===================================================== */
 #inventoriesContainer {
     display: flex;
@@ -162,14 +152,6 @@ html, body {
     color: #ddd;
     letter-spacing: 0.5px;
 }
-
-.inv-delete {
-    color: #ff4b4b;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-}
-.inv-delete:hover { color: #ff7676; text-decoration: underline; }
 
 .grid-container {
     display: grid;
@@ -214,7 +196,6 @@ html, body {
 
 .inventory-item:active { cursor: grabbing; transform: scale(0.98); }
 
-/* Fundo da imagem */
 .item-img-bg {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -222,10 +203,9 @@ html, body {
     background-position: center;
     background-repeat: no-repeat;
     z-index: 1;
-    opacity: 0.8; /* Leve transparência para mesclar com a cor do item */
+    opacity: 0.8;
 }
 
-/* Camada escura por cima da imagem para garantir leitura do texto */
 .item-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -233,7 +213,6 @@ html, body {
     z-index: 2;
 }
 
-/* Conteúdo do item (texto, botões) */
 .item-content {
     position: relative;
     z-index: 3;
@@ -289,7 +268,7 @@ html, body {
                         <path d="M20 8h-3V6c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6h6v2H9V6zm11 14H4V10h3v1c0 .55.45 1 1 1s1-.45 1-1v-1h6v1c0 .55.45 1 1 1s1-.45 1-1v-1h3v10z"/>
                     </svg>
                 </span>
-                <span class="status-name">SISTEMA DE INVENTÁRIOS</span>
+                <span class="status-name">SISTEMA DE INVENTÁRIO</span>
             </div>
         </div>
 
@@ -298,21 +277,12 @@ html, body {
             <div class="form-panel-title">Criar Novo Item</div>
             <input type="text" id="itemName" placeholder="Nome (ex: Pistola)" autocomplete="off">
             <input type="url" id="itemUrl" placeholder="URL da Imagem (Opcional)" autocomplete="off">
-            <input type="number" id="itemW" placeholder="Lrg" min="1" max="10" value="2" title="Largura em células">
-            <input type="number" id="itemH" placeholder="Alt" min="1" max="10" value="2" title="Altura em células">
+            <input type="number" id="itemW" placeholder="Lrg" min="1" max="8" value="2" title="Largura em células">
+            <input type="number" id="itemH" placeholder="Alt" min="1" max="6" value="2" title="Altura em células">
             <button id="btnAddItem" class="btn-add" type="button">+ Add Item</button>
         </div>
 
-        <!-- Adicionar Bolsa/Inventário Extra -->
-        <div class="form-panel">
-            <div class="form-panel-title">Criar Nova Bolsa / Recipiente</div>
-            <input type="text" id="invName" placeholder="Nome (ex: Cartucheira)" autocomplete="off">
-            <input type="number" id="invCols" placeholder="Colunas" min="1" max="15" value="4" title="Largura total do grid">
-            <input type="number" id="invRows" placeholder="Linhas" min="1" max="15" value="3" title="Altura total do grid">
-            <button id="btnAddInv" class="btn-add-secondary" type="button">+ Criar Bolsa</button>
-        </div>
-
-        <!-- Container onde todos os grids serão injetados -->
+        <!-- Container do Grid do Inventário Principal -->
         <div id="inventoriesContainer"></div>
 
     </div>
@@ -339,16 +309,19 @@ const urlParams = new URLSearchParams(window.location.search);
 const playerName = urlParams.get('player') || 'jogador_teste';
 const dbRef = ref(db, `fichas/${playerName}_inventario_avancado`);
 
+// Dimensões Fixas do Inventário Principal
+const GRID_COLS = 8;
+const GRID_ROWS = 6;
+
 // Estado Global (Salvo no Firebase)
 let state = {
-    inventories: [
-        { id: "inv_main", name: "Mochila Principal", cols: 8, rows: 6 } // Inventário Padrão Indestrutível
-    ],
     items: []
 };
 
 let isInitialized = false;
 let draggedItemId = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
 
 const container = document.getElementById("inventoriesContainer");
 
@@ -358,7 +331,6 @@ const container = document.getElementById("inventoriesContainer");
 onValue(dbRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        state.inventories = data.inventories || [{ id: "inv_main", name: "Mochila Principal", cols: 8, rows: 6 }];
         state.items = data.items || [];
     }
     renderAll();
@@ -371,86 +343,60 @@ function saveState() {
 }
 
 /* =====================================================
-   RENDERIZAÇÃO GLOBAL (Bolsas e Itens)
+   RENDERIZAÇÃO GLOBAL
    ===================================================== */
 function renderAll() {
     container.innerHTML = "";
 
-    // 1. Renderiza os containers das bolsas
-    state.inventories.forEach(inv => {
-        const box = document.createElement("div");
-        box.className = "inventory-box";
-        
-        // Cabeçalho da bolsa
-        let headerHtml = `<div class="inv-header">
-                            <span class="inv-title">${inv.name} (${inv.cols}x${inv.rows})</span>`;
-        if (inv.id !== "inv_main") { // Impede exclusão da mochila principal
-            headerHtml += `<span class="inv-delete" data-id="${inv.id}">Deletar</span>`;
+    const box = document.createElement("div");
+    box.className = "inventory-box";
+    
+    box.innerHTML = `
+        <div class="inv-header">
+            <span class="inv-title">Mochila Principal (${GRID_COLS}x${GRID_ROWS})</span>
+        </div>
+    `;
+
+    const grid = document.createElement("div");
+    grid.className = "grid-container";
+    grid.id = "grid_main";
+    grid.style.gridTemplateColumns = `repeat(${GRID_COLS}, 48px)`;
+    grid.style.gridTemplateRows = `repeat(${GRID_ROWS}, 48px)`;
+
+    // 1. Renderiza as células do fundo travadas nas posições exatas
+    for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+            const cell = document.createElement("div");
+            cell.className = "grid-cell";
+            cell.style.gridColumn = `${c + 1}`;
+            cell.style.gridRow = `${r + 1}`;
+            cell.dataset.col = c;
+            cell.dataset.row = r;
+
+            cell.addEventListener("dragover", (e) => { e.preventDefault(); cell.classList.add("drag-over"); });
+            cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
+            cell.addEventListener("drop", (e) => {
+                e.preventDefault();
+                cell.classList.remove("drag-over");
+                handleDrop(c, r);
+            });
+
+            grid.appendChild(cell);
         }
-        headerHtml += `</div>`;
+    }
 
-        // Grid CSS
-        const grid = document.createElement("div");
-        grid.className = "grid-container";
-        grid.id = `grid_${inv.id}`;
-        grid.style.gridTemplateColumns = `repeat(${inv.cols}, 48px)`;
-        grid.style.gridTemplateRows = `repeat(${inv.rows}, 48px)`;
-
-        // Cria as células de fundo
-        for (let r = 0; r < inv.rows; r++) {
-            for (let c = 0; c < inv.cols; c++) {
-                const cell = document.createElement("div");
-                cell.className = "grid-cell";
-                cell.dataset.invid = inv.id;
-                cell.dataset.col = c;
-                cell.dataset.row = r;
-
-                // Eventos Drop da célula
-                cell.addEventListener("dragover", (e) => { e.preventDefault(); cell.classList.add("drag-over"); });
-                cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
-                cell.addEventListener("drop", (e) => {
-                    e.preventDefault();
-                    cell.classList.remove("drag-over");
-                    handleDrop(inv.id, c, r);
-                });
-
-                grid.appendChild(cell);
-            }
-        }
-
-        box.innerHTML = headerHtml;
-        box.appendChild(grid);
-        container.appendChild(box);
-    });
-
-    // Eventos de Excluir Bolsa
-    document.querySelectorAll(".inv-delete").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            const id = e.target.getAttribute("data-id");
-            if (confirm("Tem certeza? Todos os itens dentro desta bolsa também serão perdidos.")) {
-                deleteInventory(id);
-            }
-        });
-    });
-
-    // 2. Renderiza os itens dentro das bolsas corretas
+    // 2. Renderiza os itens sobre o grid
     state.items.forEach(item => {
-        const gridDom = document.getElementById(`grid_${item.invId}`);
-        if (!gridDom) return; // Se a bolsa não existe mais (fallback), ignora render
-
         const itemEl = document.createElement("div");
         itemEl.className = "inventory-item";
         itemEl.draggable = true;
 
-        itemEl.style.gridColumnStart = item.x + 1;
-        itemEl.style.gridColumnEnd = `span ${item.w}`;
-        itemEl.style.gridRowStart = item.y + 1;
-        itemEl.style.gridRowEnd = `span ${item.h}`;
+        itemEl.style.gridColumn = `${item.x + 1} / span ${item.w}`;
+        itemEl.style.gridRow = `${item.y + 1} / span ${item.h}`;
         
         itemEl.style.backgroundColor = item.color.bg;
         itemEl.style.border = `1px solid ${item.color.border}`;
 
-        // Se houver imagem, adiciona a camada de fundo
         let imgHtml = "";
         if (item.imgUrl) {
             imgHtml = `<div class="item-img-bg" style="background-image: url('${item.imgUrl}');"></div>
@@ -468,31 +414,38 @@ function renderAll() {
             </div>
         `;
 
-        itemEl.addEventListener("dragstart", () => { draggedItemId = item.id; });
+        itemEl.addEventListener("dragstart", (e) => {
+            draggedItemId = item.id;
+            const rect = itemEl.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            // Calcula qual célula interna do item foi clicada para manter o offset do clique
+            dragOffsetX = Math.floor(clickX / 51); // 48px da célula + 3px de gap
+            dragOffsetY = Math.floor(clickY / 51);
+        });
         
         itemEl.querySelector(".item-delete").addEventListener("click", (e) => {
             e.stopPropagation();
             deleteItem(item.id);
         });
 
-        gridDom.appendChild(itemEl);
+        grid.appendChild(itemEl);
     });
+
+    box.appendChild(grid);
+    container.appendChild(box);
 }
 
 /* =====================================================
    LÓGICA DE COLISÃO E DROPS
    ===================================================== */
-function canPlaceItem(id, targetInvId, targetX, targetY, w, h) {
-    const inv = state.inventories.find(i => i.id === targetInvId);
-    if (!inv) return false;
-    
-    // Fora dos limites da bolsa alvo?
-    if (targetX + w > inv.cols || targetY + h > inv.rows) return false;
+function canPlaceItem(id, targetX, targetY, w, h) {
+    if (targetX < 0 || targetY < 0) return false;
+    if (targetX + w > GRID_COLS || targetY + h > GRID_ROWS) return false;
 
-    // Colisão com outros itens na mesma bolsa?
     for (let item of state.items) {
         if (item.id === id) continue;
-        if (item.invId !== targetInvId) continue; 
 
         const overlapX = targetX < item.x + item.w && targetX + w > item.x;
         const overlapY = targetY < item.y + item.h && targetY + h > item.y;
@@ -501,22 +454,25 @@ function canPlaceItem(id, targetInvId, targetX, targetY, w, h) {
     return true;
 }
 
-function handleDrop(targetInvId, targetX, targetY) {
+function handleDrop(targetX, targetY) {
     if (!draggedItemId) return;
     const item = state.items.find(i => i.id === draggedItemId);
     if (!item) return;
 
-    if (canPlaceItem(item.id, targetInvId, targetX, targetY, item.w, item.h)) {
-        item.invId = targetInvId;
-        item.x = targetX;
-        item.y = targetY;
+    // Subtrai o offset calculado no clique para alinhar perfeitamente com o ponteiro
+    const realX = targetX - dragOffsetX;
+    const realY = targetY - dragOffsetY;
+
+    if (canPlaceItem(item.id, realX, realY, item.w, item.h)) {
+        item.x = realX;
+        item.y = realY;
         saveState();
     }
     draggedItemId = null;
 }
 
 /* =====================================================
-   AÇÕES DO FORMULÁRIO (ADD ITEM E ADD BOLSA)
+   AÇÕES DO FORMULÁRIO (CRIAR ITEM)
    ===================================================== */
 document.getElementById("btnAddItem").addEventListener("click", () => {
     const nome = document.getElementById("itemName").value.trim() || "Item";
@@ -526,61 +482,32 @@ document.getElementById("btnAddItem").addEventListener("click", () => {
 
     let placed = false;
 
-    // Busca espaço na ordem: Principal -> Bolsa 1 -> Bolsa 2...
-    for (let inv of state.inventories) {
-        for (let r = 0; r <= inv.rows - h; r++) {
-            for (let c = 0; c <= inv.cols - w; c++) {
-                if (canPlaceItem(null, inv.id, c, r, w, h)) {
-                    state.items.push({
-                        id: "item_" + Date.now(),
-                        invId: inv.id,
-                        nome: nome,
-                        imgUrl: imgUrl,
-                        x: c, y: r, w: w, h: h,
-                        color: getRandomColor()
-                    });
-                    saveState();
-                    placed = true;
-                    break;
-                }
+    for (let r = 0; r <= GRID_ROWS - h; r++) {
+        for (let c = 0; c <= GRID_COLS - w; c++) {
+            if (canPlaceItem(null, c, r, w, h)) {
+                state.items.push({
+                    id: "item_" + Date.now(),
+                    nome: nome,
+                    imgUrl: imgUrl,
+                    x: c, y: r, w: w, h: h,
+                    color: getRandomColor()
+                });
+                saveState();
+                placed = true;
+                break;
             }
-            if (placed) break;
         }
         if (placed) break;
     }
 
-    if (!placed) alert("Nenhuma bolsa tem espaço suficiente para este item!");
+    if (!placed) alert("Sem espaço suficiente no inventário para este item!");
     
     document.getElementById("itemName").value = "";
     document.getElementById("itemUrl").value = "";
 });
 
-document.getElementById("btnAddInv").addEventListener("click", () => {
-    const name = document.getElementById("invName").value.trim() || "Nova Bolsa";
-    const cols = parseInt(document.getElementById("invCols").value) || 4;
-    const rows = parseInt(document.getElementById("invRows").value) || 3;
-
-    state.inventories.push({
-        id: "inv_" + Date.now(),
-        name: name,
-        cols: cols,
-        rows: rows
-    });
-    
-    saveState();
-    document.getElementById("invName").value = "";
-});
-
 function deleteItem(id) {
     state.items = state.items.filter(i => i.id !== id);
-    saveState();
-}
-
-function deleteInventory(invId) {
-    // Remove a bolsa
-    state.inventories = state.inventories.filter(i => i.id !== invId);
-    // Remove os itens que estavam dentro dela
-    state.items = state.items.filter(i => i.invId !== invId);
     saveState();
 }
 
