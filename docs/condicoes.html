@@ -59,24 +59,9 @@ html, body {
     margin-bottom: 15px;
     color: var(--status-color);
 }
-.status-icon {
-    width: 17px;
-    height: 17px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--status-color);
-}
-.status-icon svg {
-    width: 16px;
-    height: 16px;
-    display: block;
-    fill: currentColor;
-}
 .status-name {
     color: var(--status-color);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
     letter-spacing: 0.3px;
 }
@@ -233,6 +218,9 @@ html, body {
 <div class="status-container">
 
     <div class="status">
+        <div class="status-header">
+            <span class="status-name">CONDIÇÕES</span>
+        </div>
 
         <div class="search-wrapper">
             <input type="text" id="conditionSearch" class="condition-input" placeholder="Pesquisar condição (ex: Abalado)..." autocomplete="off">
