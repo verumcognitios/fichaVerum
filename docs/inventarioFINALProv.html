@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário Dinâmico Avançado</title>
+<style>
+/* =====================================================
+   CONFIGURAÇÃO GERAL E MODO ESCURO
+   ===================================================== */
+:root { color-scheme: light dark; }
+html, body {
+    background-color: #191919 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    min-height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+    html, body { background-color: #ffffff !important; color: #191919; }
+    .status { background: #eeeeee !important; }
+    .grid-cell { background: #d8d8d8 !important; border-color: #ccc !important; }
+    .equipped-cell { background: rgba(216, 216, 216, 0.5) !important; }
+    .inventory-box, .weightless-panel { background: #e0e0e0 !important; border-color: #ccc !important; }
+    .weightless-item { background: #d8d8d8 !important; border-color: #ccc !important; }
+    .inv-header { color: #333 !important; }
+    .tabs-container { border-bottom-color: #ccc !important; }
+    .tab { background: #d0d0d0 !important; color: #333 !important; }
+    .tab.active { background: #e0e0e0 !important; border-bottom-color: #e0e0e0 !important; font-weight: bold; }
+    .form-panel input { background: #fff; color: #191919; border-color: #bbb; }
+    .autocomplete-items { background-color: #fff !important; border-color: #bbb !important; }
+    .autocomplete-item { color: #191919 !important; border-bottom-color: #eee !important; }
+    .autocomplete-item:hover { background-color: #e9e9e9 !important; }
+}
+* { box-sizing: border-box; }
+
+.status-container {
+    width: 100%;
+    max-width: 950px;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+.status {
+    background: #373737;
+    border-radius: 9px;
+    padding: 17px;
+    margin-bottom: 12px;
+}
+
+/* =====================================================
+   SISTEMA DE ABAS
+   ===================================================== */
+.tabs-container {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #444;
+    padding-bottom: 2px;
+    flex-wrap: wrap;
+}
+.tab {
+    background: #242424; border: 1px solid #444; border-bottom: none;
+    color: #aaa; padding: 8px 12px; border-radius: 6px 6px 0 0;
+    cursor: pointer; font-size: 12px; transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+}
+.tab:hover { background: #2a2a2a; color: #fff; }
+.tab.active {
+    background: #202020; color: #fff; font-weight: bold;
+    border-color: #555; border-bottom: 2px solid #202020;
+    margin-bottom: -4px; padding-bottom: 10px;
+}
+.tab-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: 2px; }
+.tab-config, .tab-delete { font-size: 13px; opacity: 0.6; line-height: 1; cursor: pointer; }
+.tab-config { color: #aaa; }
+.tab-config:hover { opacity: 1; color: #fff; }
+.tab-delete { color: #ff4b4b; font-weight: bold; font-size: 14px; }
+.tab-delete:hover { opacity: 1; }
+
+.btn-tab-add {
+    background: transparent; border: 1px dashed #555; color: #aaa;
+    padding: 4px 12px; border-radius: 6px 6px 0 0; cursor: pointer;
+    font-size: 16px; font-weight: bold;
+}
+.btn-tab-add:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #888; }
+
+
+/* =====================================================
+   PAINEL DE FORMULÁRIO (CRIAR ITEM E PESQUISA)
+   ===================================================== */
+.form-panel {
+    background: rgba(0,0,0,0.2); border-radius: 6px; padding: 10px; margin-bottom: 15px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid rgba(255,255,255,0.05);
+}
+.form-panel-title { width: 100%; font-size: 10px; font-weight: bold; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
+.form-panel input, .form-panel button {
+    background: #242424; border: 1px solid #444; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;
+}
+.form-panel input[type="number"] { width: 50px; }
+
+/* AUTOCOMPLETE (BARRA DE PESQUISA) */
+.autocomplete-container { position: relative; flex: 1; min-width: 140px; }
+.autocomplete-container input { width: 100%; }
+.autocomplete-items {
+    position: absolute; border: 1px solid #444; border-top: none;
+    z-index: 99; top: 100%; left: 0; right: 0;
+    max-height: 200px; overflow-y: auto;
+    background-color: #242424; border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    display: none;
+}
+.autocomplete-item {
+    padding: 8px 10px; cursor: pointer; color: #fff; font-size: 11px;
+    border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;
+}
+.autocomplete-item:hover { background-color: #383838; }
+.autocomplete-item-dim { color: #aaa; font-size: 9px; font-weight: bold; }
+
+.btn-add { background: #27b879 !important; border: none !important; font-weight: bold; cursor: pointer; transition: opacity 0.2s; color: #fff !important; }
+.btn-add:hover { opacity: 0.8; }
+
+/* =====================================================
+   INVENTÁRIO, GRID E AVISOS
+   ===================================================== */
+.inventory-layout { display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap; }
+.inventory-box {
+    background: #202020; padding: 12px; border-radius: 6px;
+    border: 1px solid #444; width: fit-content; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    display: flex; flex-direction: column;
+}
+
+.grid-container { display: grid; gap: 3px; position: relative; user-select: none; }
+.grid-cell { width: 72px; height: 72px; background: #2a2a2a; border: 1px solid #333; border-radius: 4px; pointer-events: auto; }
+.grid-cell-overload {
+    background: repeating-linear-gradient(-45deg, rgba(255, 75, 75, 0.04), rgba(255, 75, 75, 0.04) 6px, rgba(255, 75, 75, 0.12) 6px, rgba(255, 75, 75, 0.12) 12px) !important;
+    border-color: rgba(255, 75, 75, 0.25) !important;
+}
+
+/* Área de Equipamentos (Vestimentas) */
+.equipped-section-wrapper { position: relative; margin-top: 12px; border-top: 1px dashed #444; padding-top: 15px; }
+.equipped-title { text-align: center; font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+.equipped-bg-container { position: relative; width: max-content; margin: 0 auto; }
+.equipped-bg {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff' opacity='0.06'%3E%3Cpath d='M12 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm4 9V6c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v5c0 .6.4 1.1.9 1.4L9 14l-2.1 6.3c-.2.6.2 1.3.9 1.3.5 0 1-.3 1.1-.8L10.3 16h3.4l1.4 4.8c.2.5.7.8 1.1.8.7 0 1.1-.7.9-1.3L15 14l2.1-1.6c.5-.3.9-.8.9-1.4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center; background-size: contain;
+    pointer-events: none; z-index: 0;
+}
+.equipped-cell {
+    background: rgba(42, 42, 42, 0.5); 
+    border-style: dashed; border-color: #555; z-index: 1; position: relative;
+}
+
+/* Alerta de Sobrecarga */
+.overload-warning {
+    color: #ff4b4b; font-size: 13px; font-weight: bold; text-align: center;
+    margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1.5px;
+    text-shadow: 0 0 5px rgba(255, 75, 75, 0.6);
+    animation: pulse-glow 1.5s infinite alternate;
+}
+@keyframes pulse-glow {
+    from { text-shadow: 0 0 5px rgba(255, 75, 75, 0.5); }
+    to { text-shadow: 0 0 12px rgba(255, 75, 75, 0.9), 0 0 2px rgba(255, 75, 75, 1); }
+}
+
+/* =====================================================
+   ITENS SEM PESO (LISTA LATERAL)
+   ===================================================== */
+.weightless-panel {
+    background: #202020; padding: 12px; border-radius: 6px; border: 1px solid #444;
+    width: 280px; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow-y: auto;
+}
+.weightless-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px; margin-bottom: 10px; }
+.weightless-header h4 { margin: 0; font-size: 11px; color: #aaa; text-transform: uppercase; }
+.btn-add-weightless { padding: 4px 8px; font-size: 10px; border-radius: 4px; }
+.weightless-list { display: flex; flex-direction: column; gap: 6px; }
+.weightless-item { background: #2a2a2a; border: 1px solid; padding: 6px 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+.weightless-item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.weightless-item-name { font-size: 11px; font-weight: bold; color: #fff; word-break: break-word; }
+.weightless-item-type { font-size: 9px; opacity: 0.7; color: #fff; }
+
+/* =====================================================
+   ESTILO DOS ITENS DENTRO DO GRID
+   ===================================================== */
+.inventory-item {
+    border-radius: 4px; color: #fff; padding: 6px; font-size: 12px; font-weight: bold;
+    display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
+    z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.7); transition: transform 0.1s, box-shadow 0.2s;
+    position: relative; overflow: visible;
+}
+.inventory-item:hover { z-index: 20; }
+.inventory-item:active { transform: scale(0.98); }
+.inventory-item.selected { z-index: 50; }
+.inventory-item.selected.valid { box-shadow: 0 0 14px 2px rgba(39, 184, 121, 0.8); border-color: #27b879 !important; transform: scale(1.02); }
+.inventory-item.selected.invalid { box-shadow: 0 0 15px 3px rgba(255, 75, 75, 0.8); border-color: #ff4b4b !important; opacity: 0.65; transform: scale(1.02); }
+.inventory-item.selected.invalid .item-overlay { background: linear-gradient(to bottom, rgba(255,0,0,0.5) 0%, rgba(255,0,0,0.1) 40%, rgba(255,0,0,0.5) 100%); }
+
+.item-img-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1; opacity: 0.8; border-radius: 4px; }
+.item-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.7) 100%); z-index: 2; border-radius: 4px; }
+
+.item-content { position: relative; z-index: 3; display: flex; flex-direction: column; justify-content: space-between; height: 100%; text-shadow: 1px 1px 3px #000, -1px -1px 3px #000; }
+.item-header { display: flex; justify-content: flex-start; align-items: flex-start; width: 100%; }
+.item-name { pointer-events: none; overflow-wrap: break-word; word-break: normal; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.1; }
+
+.item-footer { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
+.item-actions { display: flex; gap: 3px; z-index: 10; flex-shrink: 0; align-items: center; }
+
+/* Botões nos itens */
+.item-edit {
+    cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1;
+    color: #fff; background: transparent; padding: 0 2px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9); transition: transform 0.1s;
+}
+.item-edit:hover { color: #ddd; transform: scale(1.15); }
+.item-delete { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; background: rgba(0,0,0,0.6); border-radius: 3px; padding: 3px 5px; color: #ff4b4b; }
+.item-delete:hover { color: #ff7676; background: rgba(0,0,0,0.9); }
+
+/* Setinha de transferência */
+.item-transfer {
+    cursor: pointer; color: #fff; opacity: 0.8;
+    transition: transform 0.2s, opacity 0.2s; display: inline-flex; align-items: center; justify-content: center;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+}
+.item-transfer:hover { opacity: 1; transform: scale(1.2) rotate(15deg); color: #88ccff; }
+
+/* TOOLTIP */
+.item-tooltip {
+    visibility: hidden; opacity: 0; position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
+    background: #111; color: #eee; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: normal; white-space: pre-wrap;
+    width: max-content; max-width: 200px; box-shadow: 0 6px 16px rgba(0,0,0,0.9); border: 1px solid #555; pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease; z-index: 100; text-shadow: none; line-height: 1.3;
+}
+.inventory-item:hover .item-tooltip, .weightless-item:hover .item-tooltip { visibility: visible; opacity: 1; }
+.weightless-item .item-tooltip { bottom: auto; top: 110%; }
+
+/* =====================================================
+   JANELAS MODAIS
+   ===================================================== */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+.modal-content { background: #242424; border: 1px solid #444; border-radius: 8px; padding: 18px; width: 90%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+.modal-content h3 { margin: 0 0 4px 0; font-size: 14px; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+.modal-content label { font-size: 10px; color: #aaa; margin-bottom: -8px; font-weight: bold; text-transform: uppercase; }
+.modal-content input, .modal-content textarea, .modal-content select { background: #181818; border: 1px solid #444; color: #fff; padding: 8px 10px; border-radius: 4px; font-size: 12px; font-family: inherit; resize: vertical; outline: none; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.btn-cancel { background: #444 !important; border: none !important; color: #fff !important; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+.btn-cancel:hover { background: #555 !important; }
+</style>
+</head>
+<body>
+
+<div class="status-container">
+    <div class="status">
+        <div id="tabsContainer" class="tabs-container"></div>
+
+        <div class="form-panel">
+            <div class="form-panel-title">Criar ou Buscar Item na Bolsa Atual</div>
+            
+            <div class="autocomplete-container">
+                <input type="text" id="itemName" placeholder="Pesquisar ou Criar (ex: Espada)" autocomplete="off">
+                <div id="autocompleteList" class="autocomplete-items"></div>
+            </div>
+
+            <input type="number" id="itemW" placeholder="Lrg" min="1" max="8" value="1" title="Largura">
+            <input type="number" id="itemH" placeholder="Alt" min="1" max="6" value="2" title="Altura">
+            <button id="btnAddItem" class="btn-add" type="button">+ Add Item</button>
+        </div>
+
+        <div id="inventoriesContainer"></div>
+
+        <div style="font-size: 11px; color: #888; margin-top: 15px; line-height: 1.4;">
+            <strong>Controles:</strong> Clique para pegar. Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> para mover. <kbd>R</kbd> ou <strong>Botão Dir.</strong> gira. <kbd>C</kbd> copia item.<br>
+            <span style="color:#27b879">Verde</span> = Livre. <span style="color:#ff4b4b">Vermelho</span> = Bloqueado. <kbd>Enter</kbd> ou Clique confirma. <kbd>Esc</kbd> cancela.
+        </div>
+    </div>
+</div>
+
+<!-- Modais -->
+<div id="configModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Capacidade desta Bolsa</h3>
+        <label for="configCols">Largura do Grid Principal (Colunas)</label>
+        <input type="number" id="configCols" min="4" max="20" value="8">
+        <label for="configRows">Altura do Grid Principal (Linhas)</label>
+        <input type="number" id="configRows" min="4" max="20" value="6">
+        <div class="modal-actions">
+            <button id="btnCancelConfig" class="btn-cancel" type="button">Cancelar</button>
+            <button id="btnSaveConfig" class="btn-add" type="button">Salvar Config.</button>
+        </div>
+    </div>
+</div>
+
+<div id="addWeightlessModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Adicionar Item Sem Peso</h3>
+        <label for="addWName">Nome</label>
+        <input type="text" id="addWName" autocomplete="off" placeholder="Ex: Chave Antiga">
+        <label for="addWCategory">Categoria / Tipo</label>
+        <select id="addWCategory">
+            <option value="default">Geral (Azul)</option>
+            <option value="consumable">Suplementos/Consumíveis (Verde)</option>
+            <option value="weapon">Armas (Laranja)</option>
+            <option value="special">Especial (Roxo)</option>
+            <option value="key">Missão/Chaves (Vermelho)</option>
+        </select>
+        <label for="addWDesc">Descrição</label>
+        <textarea id="addWDesc" rows="3" placeholder="Escreva a descrição..."></textarea>
+        <div class="modal-actions">
+            <button id="btnCancelAddW" class="btn-cancel" type="button">Cancelar</button>
+            <button id="btnSaveAddW" class="btn-add" type="button">Adicionar</button>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Editar Item</h3>
+        <label for="editItemName">Nome</label>
+        <input type="text" id="editItemName" autocomplete="off">
+        <label for="editItemUrl">URL da Imagem</label>
+        <input type="url" id="editItemUrl" placeholder="https://..." autocomplete="off">
+        <label for="editItemCategory">Categoria / Tipo</label>
+        <select id="editItemCategory">
+            <option value="default">Geral (Azul)</option>
+            <option value="consumable">Suplementos/Consumíveis (Verde)</option>
+            <option value="weapon">Armas (Laranja)</option>
+            <option value="special">Especial (Roxo)</option>
+            <option value="key">Missão/Chaves (Vermelho)</option>
+        </select>
+        <label for="editItemDesc">Descrição</label>
+        <textarea id="editItemDesc" rows="3" placeholder="Escreva a descrição..."></textarea>
+        <div class="modal-actions">
+            <button id="btnDeleteEdit" class="btn-cancel" style="background:#ff4b4b!important; color:#fff!important; margin-right:auto;" type="button">Excluir</button>
+            <button id="btnCancelEdit" class="btn-cancel" type="button">Cancelar</button>
+            <button id="btnSaveEdit" class="btn-add" type="button">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Transferência -->
+<div id="transferModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Transferir Item</h3>
+        <label for="transferBagSelect">Selecione a bolsa de destino</label>
+        <select id="transferBagSelect"></select>
+        <div class="modal-actions">
+            <button id="btnCancelTransfer" class="btn-cancel" type="button">Cancelar</button>
+            <button id="btnConfirmTransfer" class="btn-add" type="button">Transferir</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyD2qEEAPbzP1RFVnx2ijnEyCXB3VWzfz-8",
+    authDomain: "ficha-verum.firebaseapp.com",
+    databaseURL: "https://ficha-verum-default-rtdb.firebaseio.com",
+    projectId: "ficha-verum",
+    storageBucket: "ficha-verum.firebasestorage.app",
+    messagingSenderId: "281172832426",
+    appId: "1:281172832426:web:85442662439544144fa0d3"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('player') || 'jogador_teste';
+const dbRef = ref(db, `fichas/${playerName}_inventario_avancado`);
+
+const CELL_SIZE = 72;
+const CELL_GAP = 3;
+const EQUIPPED_COLS = 7;
+
+const CATEGORIES = {
+    "default": { bg: "rgba(49, 140, 255, 0.4)", border: "#318cff" },
+    "consumable": { bg: "rgba(39, 184, 121, 0.4)", border: "#27b879" },
+    "special": { bg: "rgba(169, 88, 232, 0.4)", border: "#a958e8" },
+    "weapon": { bg: "rgba(255, 165, 0, 0.4)",  border: "#ffa500" },
+    "key": { bg: "rgba(200, 50, 50, 0.4)",  border: "#ff4b4b" }
+};
+
+/* =====================================================
+   BANCO DE DADOS DE ITENS PRÉ-PRONTOS
+   ===================================================== */
+const ITEM_DATABASE = [
+    { nome: "Poção de Cura", w: 1, h: 1, category: "consumable", descricao: "Restaura pontos de vida.", imgUrl: "https://i.imgur.com/39bXf8k.png" },
+    { nome: "Poção de Mana", w: 1, h: 1, category: "consumable", descricao: "Restaura pontos de mana.", imgUrl: "https://i.imgur.com/5l0y5Xh.png" },
+    { nome: "Espada Curta", w: 1, h: 2, category: "weapon", descricao: "Uma espada leve.", imgUrl: "" },
+    { nome: "Espada Longa", w: 1, h: 3, category: "weapon", descricao: "Uma espada de duas mãos.", imgUrl: "" },
+    { nome: "Machado de Batalha", w: 2, h: 3, category: "weapon", descricao: "Machado pesado.", imgUrl: "" },
+    { nome: "Arco Curto", w: 2, h: 3, category: "weapon", descricao: "Arco simples de caça.", imgUrl: "" },
+    { nome: "Escudo de Madeira", w: 2, h: 2, category: "default", descricao: "Escudo leve.", imgUrl: "" },
+    { nome: "Armadura de Couro", w: 2, h: 3, category: "default", descricao: "Armadura leve.", imgUrl: "" },
+    { nome: "Ração de Viagem", w: 1, h: 1, category: "consumable", descricao: "Comida para um dia.", imgUrl: "" },
+    { nome: "Tocha", w: 1, h: 2, category: "default", descricao: "Ilumina lugares escuros.", imgUrl: "" },
+    { nome: "Corda (15m)", w: 1, h: 2, category: "default", descricao: "Corda resistente.", imgUrl: "" },
+    { nome: "Chave Misteriosa", w: 1, h: 1, category: "key", descricao: "Abre algo desconhecido.", imgUrl: "" },
+    { nome: "Grimório", w: 2, h: 2, category: "special", descricao: "Livro de feitiços.", imgUrl: "" }
+];
+let selectedPredefinedItem = null;
+
+let state = {
+    tabs: [
+        { id: "tab_main", name: "Mochila Principal", items: [], weightlessItems: [], config: { cols: 8, rows: 6 } }
+    ]
+};
+
+let currentTabId = "tab_main";
+let isInitialized = false;
+let editingItemId = null;
+let editingTabConfigId = null;
+let transferringItemId = null;
+let activeItemPreview = null; 
+
+const container = document.getElementById("inventoriesContainer");
+const tabsContainer = document.getElementById("tabsContainer");
+
+/* =====================================================
+   LÓGICA DA BARRA DE PESQUISA (AUTOCOMPLETE)
+   ===================================================== */
+const itemNameInput = document.getElementById("itemName");
+const autocompleteList = document.getElementById("autocompleteList");
+
+function renderAutocompleteResults(results) {
+    autocompleteList.innerHTML = "";
+    if (results.length > 0) {
+        autocompleteList.style.display = "block";
+        results.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "autocomplete-item";
+            
+            const categoryLabels = { default: 'Geral', consumable: 'Consumível', special: 'Especial', weapon: 'Arma', key: 'Chave' };
+            const catText = categoryLabels[item.category] || 'Geral';
+            
+            div.innerHTML = `<span>${item.nome}</span> <span class="autocomplete-item-dim">${item.w}x${item.h} | ${catText}</span>`;
+            div.addEventListener("click", () => {
+                itemNameInput.value = item.nome;
+                document.getElementById("itemW").value = item.w;
+                document.getElementById("itemH").value = item.h;
+                selectedPredefinedItem = item;
+                autocompleteList.innerHTML = "";
+                autocompleteList.style.display = "none";
+            });
+            autocompleteList.appendChild(div);
+        });
+    } else {
+        autocompleteList.style.display = "none";
+    }
+}
+
+itemNameInput.addEventListener("input", function() {
+    const val = this.value;
+    selectedPredefinedItem = null; // Reseta o item predefinido se o jogador mudar o texto
+    if (!val) {
+        autocompleteList.style.display = "none";
+        return;
+    }
+    const results = ITEM_DATABASE.filter(item => item.nome.toLowerCase().includes(val.toLowerCase()));
+    renderAutocompleteResults(results);
+});
+
+itemNameInput.addEventListener("focus", function() {
+    if (!this.value) renderAutocompleteResults(ITEM_DATABASE);
+});
+
+document.addEventListener("click", function(e) {
+    if (e.target !== itemNameInput && e.target !== autocompleteList) {
+        autocompleteList.style.display = "none";
+    }
+});
+
+
+/* =====================================================
+   FIREBASE SYNC
+   ===================================================== */
+onValue(dbRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.tabs) {
+        state.tabs = data.tabs.map(tab => {
+            if (!tab.config) tab.config = data.config ? { ...data.config } : { cols: 8, rows: 6 };
+            if (!tab.weightlessItems) tab.weightlessItems = [];
+            if (!tab.items) tab.items = [];
+            tab.items.forEach(i => { if (!i.grid) i.grid = 'main'; });
+            return tab;
+        });
+    } else if (data && !data.tabs) {
+        const itemsMigrados = (data.items || []).map(i => { i.grid = 'main'; return i; });
+        state.tabs = [{
+            id: "tab_main", name: "Mochila Principal",
+            items: itemsMigrados, weightlessItems: [],
+            config: data.config || { cols: 8, rows: 6 }
+        }];
+    }
+    
+    if (!state.tabs.find(t => t.id === currentTabId)) currentTabId = state.tabs[0]?.id || "tab_main";
+    
+    const currentTab = getCurrentTab();
+    if (activeItemPreview && currentTab && !currentTab.items.find(i => i.id === activeItemPreview.id)) {
+        activeItemPreview = null;
+    }
+    
+    renderAll();
+    isInitialized = true;
+});
+
+function saveState() {
+    if (!isInitialized) return;
+    set(dbRef, state);
+}
+
+function getCurrentTab() { return state.tabs.find(t => t.id === currentTabId); }
+
+function isMainTab(tabId) {
+    return state.tabs.length > 0 && (tabId === state.tabs[0].id || tabId === "tab_main");
+}
+
+function findItemGlobal(id) {
+    for (let tab of state.tabs) {
+        let item = tab.items.find(i => i.id === id);
+        if (item) return { tab, item, type: 'grid' };
+        item = tab.weightlessItems.find(i => i.id === id);
+        if (item) return { tab, item, type: 'weightless' };
+    }
+    return null;
+}
+
+/* =====================================================
+   RENDERIZAÇÃO
+   ===================================================== */
+function renderAll() {
+    tabsContainer.innerHTML = "";
+    state.tabs.forEach((tab, index) => {
+        const btn = document.createElement("button");
+        btn.className = `tab ${tab.id === currentTabId ? "active" : ""}`;
+        
+        const titleSpan = document.createElement("span");
+        titleSpan.textContent = tab.name;
+        btn.appendChild(titleSpan);
+
+        const actionsSpan = document.createElement("span");
+        actionsSpan.className = "tab-actions";
+
+        const cfg = document.createElement("span");
+        cfg.className = "tab-config"; cfg.innerHTML = "&#9881;"; cfg.title = "Configurar Grid desta Bolsa";
+        cfg.onclick = (e) => { e.stopPropagation(); openConfigModal(tab.id); };
+        actionsSpan.appendChild(cfg);
+
+        // Apenas bolsas secundárias podem ser excluídas (A primeira bolsa principal não pode)
+        const isPrimary = (index === 0 || tab.id === "tab_main");
+        if (!isPrimary) {
+            const del = document.createElement("span");
+            del.className = "tab-delete"; del.textContent = "×"; del.title = "Excluir aba";
+            del.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`Excluir a bolsa "${tab.name}" e todos os seus itens?`)) {
+                    state.tabs = state.tabs.filter(t => t.id !== tab.id);
+                    if (currentTabId === tab.id) currentTabId = state.tabs[0].id;
+                    saveState();
+                }
+            };
+            actionsSpan.appendChild(del);
+        }
+        btn.appendChild(actionsSpan);
+        btn.onclick = () => { currentTabId = tab.id; activeItemPreview = null; renderAll(); };
+        tabsContainer.appendChild(btn);
+    });
+
+    const addTabBtn = document.createElement("button");
+    addTabBtn.className = "btn-tab-add"; addTabBtn.textContent = "+ Nova Bolsa";
+    addTabBtn.onclick = () => {
+        const name = prompt("Nome da nova bolsa/aba:");
+        if (name && name.trim() !== "") {
+            const newId = "tab_" + Date.now();
+            state.tabs.push({ id: newId, name: name.trim(), items: [], weightlessItems: [], config: { cols: 8, rows: 6 } });
+            currentTabId = newId; saveState();
+        }
+    };
+    tabsContainer.appendChild(addTabBtn);
+
+    const currentTab = getCurrentTab();
+    if (!currentTab) return;
+
+    const cols = currentTab.config.cols;
+    const rows = currentTab.config.rows;
+    const isCurrentMain = isMainTab(currentTab.id);
+
+    const equippedSectionHtml = isCurrentMain ? `
+        <!-- Grid Equipamentos (Apenas na Bolsa Principal) -->
+        <div class="equipped-section-wrapper">
+            <div class="equipped-title">Equipamentos Vestidos</div>
+            <div class="equipped-bg-container">
+                <div class="equipped-bg"></div>
+                <div id="equippedGridContainer" class="grid-container" style="grid-template-columns: repeat(${EQUIPPED_COLS}, ${CELL_SIZE}px); grid-template-rows: ${CELL_SIZE}px;"></div>
+            </div>
+        </div>
+    ` : '';
+
+    container.innerHTML = `
+        <div class="inventory-layout">
+            <div class="inventory-box">
+                <!-- Grid Principal -->
+                <div id="mainGridContainer" class="grid-container" style="grid-template-columns: repeat(${cols}, ${CELL_SIZE}px); grid-template-rows: repeat(${rows}, ${CELL_SIZE}px);"></div>
+                
+                <!-- Aviso de Sobrecarga (Abaixo do Grid Principal) -->
+                <div id="overloadWarning" class="overload-warning" style="display: none;">Em sobrecarga</div>
+
+                ${equippedSectionHtml}
+            </div>
+
+            <!-- Itens sem peso -->
+            <div class="weightless-panel" id="weightlessBox">
+                <div class="weightless-header">
+                    <h4>Itens sem Peso</h4>
+                    <button id="btnOpenAddWeightless" class="btn-add btn-add-weightless" type="button">+ Add Item</button>
+                </div>
+                <div class="weightless-list" id="weightlessList"></div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("btnOpenAddWeightless").addEventListener("click", openAddWeightlessModal);
+
+    const mainGridHeight = (rows * CELL_SIZE) + ((rows - 1) * CELL_GAP);
+    const equipHeight = isCurrentMain ? (CELL_SIZE + 60) : 0; 
+    document.getElementById("weightlessBox").style.maxHeight = `${mainGridHeight + equipHeight + 24}px`;
+
+    const mainGrid = document.getElementById("mainGridContainer");
+    const equippedGrid = document.getElementById("equippedGridContainer");
+
+    // Gerar Células Grid Principal
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const cell = document.createElement("div");
+            cell.className = "grid-cell";
+            if (r === rows - 1) { cell.classList.add("grid-cell-overload"); cell.title = "Área de Sobrecarga"; }
+            cell.style.gridColumn = `${c + 1}`; cell.style.gridRow = `${r + 1}`;
+            mainGrid.appendChild(cell);
+        }
+    }
+
+    // Gerar Células Grid Equipamentos (Apenas na Bolsa Principal)
+    if (isCurrentMain && equippedGrid) {
+        for (let c = 0; c < EQUIPPED_COLS; c++) {
+            const cell = document.createElement("div");
+            cell.className = "grid-cell equipped-cell";
+            cell.style.gridColumn = `${c + 1}`; cell.style.gridRow = `1`;
+            equippedGrid.appendChild(cell);
+        }
+    }
+
+    // Renderizar Itens do Grid
+    currentTab.items.forEach(item => {
+        const itemEl = document.createElement("div");
+        itemEl.className = "inventory-item";
+        
+        let renderX = item.x; let renderY = item.y;
+        let renderW = item.w; let renderH = item.h;
+        let renderGrid = (item.grid === 'equipped' && isCurrentMain) ? 'equipped' : 'main';
+        let isValid = true;
+
+        if (activeItemPreview && activeItemPreview.id === item.id) {
+            renderX = activeItemPreview.x; renderY = activeItemPreview.y;
+            renderW = activeItemPreview.w; renderH = activeItemPreview.h;
+            renderGrid = (activeItemPreview.grid === 'equipped' && isCurrentMain) ? 'equipped' : 'main';
+            isValid = canPlaceItem(item.id, renderX, renderY, renderW, renderH, renderGrid);
+            
+            itemEl.classList.add("selected");
+            if (isValid) itemEl.classList.add("valid");
+            else itemEl.classList.add("invalid");
+        }
+
+        itemEl.style.gridColumn = `${renderX + 1} / span ${renderW}`;
+        itemEl.style.gridRow = `${renderY + 1} / span ${renderH}`;
+        itemEl.style.backgroundColor = item.color.bg;
+        itemEl.style.border = `1px solid ${item.color.border}`;
+
+        let imgHtml = item.imgUrl ? `<div class="item-img-bg" style="background-image: url('${item.imgUrl}');"></div><div class="item-overlay"></div>` : "";
+        let tooltipHtml = (item.descricao && item.descricao.trim()) ? `<div class="item-tooltip"><strong>${item.nome}</strong><br>${item.descricao}</div>` : "";
+
+        const transferSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
+
+        itemEl.innerHTML = `
+            ${imgHtml}
+            <div class="item-content">
+                <div class="item-header">
+                    <span class="item-name">${item.nome}</span>
+                </div>
+                <div class="item-footer">
+                    <div class="item-actions">
+                        <span class="item-edit" data-id="${item.id}" title="Editar / Excluir">✎</span>
+                    </div>
+                    <span class="item-transfer" data-id="${item.id}" title="Transferir para outra bolsa">${transferSvg}</span>
+                </div>
+            </div>
+            ${tooltipHtml}
+        `;
+
+        itemEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if(e.target.closest('.item-actions') || e.target.closest('.item-transfer')) return;
+
+            if (activeItemPreview && activeItemPreview.id !== item.id) {
+                if (canPlaceItem(activeItemPreview.id, activeItemPreview.x, activeItemPreview.y, activeItemPreview.w, activeItemPreview.h, activeItemPreview.grid)) {
+                    const prev = currentTab.items.find(i => i.id === activeItemPreview.id);
+                    if(prev) {
+                        prev.x = activeItemPreview.x; prev.y = activeItemPreview.y;
+                        prev.w = activeItemPreview.w; prev.h = activeItemPreview.h;
+                        prev.grid = activeItemPreview.grid;
+                        saveState();
+                    }
+                }
+                activeItemPreview = { id: item.id, x: item.x, y: item.y, w: item.w, h: item.h, grid: renderGrid };
+                renderAll();
+            } else if (activeItemPreview && activeItemPreview.id === item.id) {
+                if (canPlaceItem(activeItemPreview.id, activeItemPreview.x, activeItemPreview.y, activeItemPreview.w, activeItemPreview.h, activeItemPreview.grid)) {
+                    item.x = activeItemPreview.x; item.y = activeItemPreview.y;
+                    item.w = activeItemPreview.w; item.h = activeItemPreview.h;
+                    item.grid = activeItemPreview.grid;
+                    activeItemPreview = null;
+                    saveState();
+                }
+            } else {
+                activeItemPreview = { id: item.id, x: item.x, y: item.y, w: item.w, h: item.h, grid: renderGrid };
+                renderAll();
+            }
+        });
+        
+        itemEl.querySelector(".item-edit").addEventListener("click", (e) => { e.stopPropagation(); openEditModal(item.id); });
+        itemEl.querySelector(".item-transfer").addEventListener("click", (e) => { e.stopPropagation(); openTransferModal(item.id); });
+        
+        if (renderGrid === 'main' || !equippedGrid) mainGrid.appendChild(itemEl);
+        else equippedGrid.appendChild(itemEl);
+    });
+
+    // Lista sem Peso 
+    const weightlessList = document.getElementById("weightlessList");
+    if(currentTab.weightlessItems.length === 0) {
+        weightlessList.innerHTML = `<span style="color:#666; font-size:11px; font-style:italic;">Nenhum item sem peso.</span>`;
+    } else {
+        currentTab.weightlessItems.forEach(item => {
+            const wlItem = document.createElement("div");
+            wlItem.className = "weightless-item";
+            wlItem.style.backgroundColor = item.color.bg.replace('0.4', '0.2');
+            wlItem.style.borderColor = item.color.border;
+
+            let tooltipHtml = (item.descricao && item.descricao.trim()) ? `<div class="item-tooltip"><strong>${item.nome}</strong><br>${item.descricao}</div>` : "";
+            const typeLabels = { default: 'Geral', consumable: 'Consumível', special: 'Especial', weapon: 'Arma', key: 'Chave/Missão' };
+            const typeText = typeLabels[item.category] || 'Geral';
+            const transferSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
+
+            wlItem.innerHTML = `
+                <div class="weightless-item-info">
+                    <span class="weightless-item-name" style="color: ${item.color.border}">${item.nome}</span>
+                    <span class="weightless-item-type">${typeText}</span>
+                </div>
+                <div class="item-actions">
+                    <span class="item-transfer" data-id="${item.id}" title="Transferir">${transferSvg}</span>
+                    <span class="item-edit" data-id="${item.id}" title="Editar">✎</span>
+                    <span class="item-delete" data-id="${item.id}" title="Excluir">×</span>
+                </div>
+                ${tooltipHtml}
+            `;
+            
+            wlItem.querySelector(".item-edit").addEventListener("click", (e) => { e.stopPropagation(); openEditModal(item.id); });
+            wlItem.querySelector(".item-delete").addEventListener("click", (e) => { e.stopPropagation(); deleteItem(item.id); });
+            wlItem.querySelector(".item-transfer").addEventListener("click", (e) => { e.stopPropagation(); openTransferModal(item.id); });
+            
+            weightlessList.appendChild(wlItem);
+        });
+    }
+
+    // =====================================================
+    // LÓGICA DE AVISO DE SOBRECARGA
+    // =====================================================
+    let hasOverload = false;
+    const overloadRowIndex = rows - 1;
+
+    // Checar itens já posicionados
+    currentTab.items.forEach(item => {
+        if (item.grid === 'main') {
+            const itemBottom = item.y + item.h - 1;
+            if (itemBottom >= overloadRowIndex) hasOverload = true;
+        }
+    });
+
+    // Checar também o item que o usuário está segurando
+    if (activeItemPreview && activeItemPreview.grid === 'main') {
+        const previewBottom = activeItemPreview.y + activeItemPreview.h - 1;
+        if (previewBottom >= overloadRowIndex) hasOverload = true;
+    }
+
+    const warningEl = document.getElementById("overloadWarning");
+    if (warningEl) {
+        warningEl.style.display = hasOverload ? "block" : "none";
+    }
+}
+
+/* =====================================================
+   LÓGICA DE COLISÃO E MOUSE
+   ===================================================== */
+function canPlaceItem(id, targetX, targetY, w, h, targetGrid = 'main') {
+    const currentTab = getCurrentTab();
+    const isCurrentMain = isMainTab(currentTab.id);
+
+    // Se for bolsa secundária, forçar a grid ser 'main'
+    if (!isCurrentMain && targetGrid === 'equipped') return false;
+
+    if (targetGrid === 'main') {
+        const cols = currentTab.config.cols;
+        const rows = currentTab.config.rows;
+        if (targetX < 0 || targetY < 0) return false;
+        if (targetX + w > cols || targetY + h > rows) return false;
+    } else if (targetGrid === 'equipped') {
+        if (targetX < 0 || targetX + w > EQUIPPED_COLS || targetY !== 0) return false;
+    }
+
+    const items = currentTab.items || [];
+    for (let item of items) {
+        if (item.id === id) continue;
+        const itemGrid = item.grid || 'main';
+        if (itemGrid !== targetGrid) continue; 
+
+        if (targetGrid === 'main') {
+            const overlapX = targetX < item.x + item.w && targetX + w > item.x;
+            const overlapY = targetY < item.y + item.h && targetY + h > item.y;
+            if (overlapX && overlapY) return false; 
+        } else {
+            const overlapX = targetX < item.x + item.w && targetX + w > item.x;
+            if (overlapX) return false;
+        }
+    }
+    return true;
+}
+
+document.addEventListener("contextmenu", (e) => {
+    if (activeItemPreview) {
+        e.preventDefault();
+        let temp = activeItemPreview.w;
+        activeItemPreview.w = activeItemPreview.h;
+        activeItemPreview.h = temp;
+        renderAll();
+    }
+});
+
+/* =====================================================
+   TECLADO E CLIQUES
+   ===================================================== */
+document.addEventListener("click", (e) => {
+    if (activeItemPreview && !e.target.closest('.inventory-item') && !e.target.closest('.modal-content')) {
+        if (canPlaceItem(activeItemPreview.id, activeItemPreview.x, activeItemPreview.y, activeItemPreview.w, activeItemPreview.h, activeItemPreview.grid)) {
+            const item = getCurrentTab().items.find(i => i.id === activeItemPreview.id);
+            if(item) {
+                item.x = activeItemPreview.x; item.y = activeItemPreview.y;
+                item.w = activeItemPreview.w; item.h = activeItemPreview.h;
+                item.grid = activeItemPreview.grid;
+                saveState();
+            }
+        }
+        activeItemPreview = null;
+        renderAll();
+    }
+});
+
+document.addEventListener("keydown", (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (!activeItemPreview) return; 
+
+    if (e.key === "Escape") { activeItemPreview = null; renderAll(); return; }
+
+    if (e.key === "Enter") {
+        if (canPlaceItem(activeItemPreview.id, activeItemPreview.x, activeItemPreview.y, activeItemPreview.w, activeItemPreview.h, activeItemPreview.grid)) {
+            const item = getCurrentTab().items.find(i => i.id === activeItemPreview.id);
+            if(item) {
+                item.x = activeItemPreview.x; item.y = activeItemPreview.y;
+                item.w = activeItemPreview.w; item.h = activeItemPreview.h;
+                item.grid = activeItemPreview.grid;
+                activeItemPreview = null;
+                saveState();
+            }
+        }
+        return; 
+    }
+
+    const currentTab = getCurrentTab();
+    const isCurrentMain = isMainTab(currentTab.id);
+    let newX = activeItemPreview.x; let newY = activeItemPreview.y;
+    let newW = activeItemPreview.w; let newH = activeItemPreview.h;
+    let newGrid = activeItemPreview.grid || 'main';
+    
+    const key = e.key.toLowerCase();
+    let moved = false;
+
+    if (key === 'w' || e.key === 'ArrowUp') { 
+        if (newGrid === 'equipped') {
+            newGrid = 'main';
+            newY = currentTab.config.rows - 1; 
+            newX = Math.min(newX, currentTab.config.cols - newW); 
+        } else {
+            newY -= 1; 
+        }
+        moved = true; 
+    }
+    else if (key === 's' || e.key === 'ArrowDown') { 
+        if (isCurrentMain && newGrid === 'main' && newY === currentTab.config.rows - 1) {
+            newGrid = 'equipped'; newY = 0;
+            newX = Math.min(newX, EQUIPPED_COLS - newW); 
+        } else {
+            newY += 1; 
+        }
+        moved = true; 
+    }
+    else if (key === 'a' || e.key === 'ArrowLeft') { newX -= 1; moved = true; }
+    else if (key === 'd' || e.key === 'ArrowRight') { newX += 1; moved = true; }
+    else if (key === 'r') { newW = activeItemPreview.h; newH = activeItemPreview.w; moved = true; }
+    else if (key === 'c') {
+        const itemToCopy = currentTab.items.find(i => i.id === activeItemPreview.id);
+        if (itemToCopy) {
+            const newItem = { ...itemToCopy, id: "item_" + Date.now() + Math.floor(Math.random() * 1000), grid: 'main' };
+            let placed = false;
+            for (let r = 0; r <= currentTab.config.rows - newItem.h; r++) {
+                for (let c = 0; c <= currentTab.config.cols - newItem.w; c++) {
+                    if (canPlaceItem(null, c, r, newItem.w, newItem.h, 'main')) {
+                        newItem.x = c; newItem.y = r;
+                        currentTab.items.push(newItem);
+                        placed = true; break;
+                    }
+                }
+                if (placed) break;
+            }
+            if (placed) saveState();
+            else alert("Sem espaço livre suficiente no grid principal para copiar!");
+        }
+    }
+
+    if (moved) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+        activeItemPreview.x = newX; activeItemPreview.y = newY;
+        activeItemPreview.w = newW; activeItemPreview.h = newH;
+        activeItemPreview.grid = newGrid;
+        renderAll();
+    }
+});
+
+/* =====================================================
+   CRIAR NOVO ITEM NO GRID
+   ===================================================== */
+document.getElementById("btnAddItem").addEventListener("click", () => {
+    const currentTab = getCurrentTab();
+    if(!currentTab) return;
+
+    const nome = document.getElementById("itemName").value.trim() || "Item";
+    const w = parseInt(document.getElementById("itemW").value) || 1;
+    const h = parseInt(document.getElementById("itemH").value) || 1;
+    const cols = currentTab.config.cols;
+    const rows = currentTab.config.rows;
+
+    let category = "default";
+    let descricao = "";
+    let imgUrl = "";
+
+    // Verifica se o item sendo criado foi selecionado pela base de dados
+    if (selectedPredefinedItem && selectedPredefinedItem.nome === nome) {
+        category = selectedPredefinedItem.category || "default";
+        descricao = selectedPredefinedItem.descricao || "";
+        imgUrl = selectedPredefinedItem.imgUrl || "";
+    }
+
+    const newItemBase = {
+        id: "item_" + Date.now(), grid: 'main',
+        nome: nome, imgUrl: imgUrl, descricao: descricao,
+        category: category, color: CATEGORIES[category]
+    };
+
+    let placed = false;
+    for (let r = 0; r <= rows - h; r++) {
+        for (let c = 0; c <= cols - w; c++) {
+            if (canPlaceItem(null, c, r, w, h, 'main')) {
+                currentTab.items.push({ ...newItemBase, x: c, y: r, w: w, h: h });
+                saveState(); placed = true; break;
+            }
+        }
+        if (placed) break;
+    }
+    if (!placed) alert("Sem espaço suficiente no grid principal!");
+    
+    // Limpar o formulário e resetar selection
+    document.getElementById("itemName").value = "";
+    selectedPredefinedItem = null;
+});
+
+/* =====================================================
+   MODAIS: SEM PESO, EDITAR, CONFIG, TRANSFERIR
+   ===================================================== */
+function openAddWeightlessModal() {
+    document.getElementById("addWName").value = "";
+    document.getElementById("addWCategory").value = "default";
+    document.getElementById("addWDesc").value = "";
+    document.getElementById("addWeightlessModal").style.display = "flex";
+}
+document.getElementById("btnSaveAddW").addEventListener("click", () => {
+    const currentTab = getCurrentTab();
+    const selectedCat = document.getElementById("addWCategory").value;
+    currentTab.weightlessItems.push({
+        id: "item_" + Date.now(),
+        nome: document.getElementById("addWName").value.trim() || "Item",
+        imgUrl: "", descricao: document.getElementById("addWDesc").value.trim(),
+        category: selectedCat, color: CATEGORIES[selectedCat] || CATEGORIES["default"]
+    });
+    saveState(); document.getElementById("addWeightlessModal").style.display = "none";
+});
+document.getElementById("btnCancelAddW").addEventListener("click", () => document.getElementById("addWeightlessModal").style.display = "none");
+
+function openEditModal(itemId) {
+    const found = findItemGlobal(itemId);
+    if (!found) return;
+    editingItemId = itemId;
+    document.getElementById("editItemName").value = found.item.nome || "";
+    document.getElementById("editItemUrl").value = found.item.imgUrl || "";
+    document.getElementById("editItemDesc").value = found.item.descricao || "";
+    
+    let catKey = found.item.category || "default";
+    if (!found.item.category && found.item.color) {
+        for (let k in CATEGORIES) { if (CATEGORIES[k].border === found.item.color.border) { catKey = k; break; } }
+    }
+    document.getElementById("editItemCategory").value = catKey;
+    document.getElementById("editModal").style.display = "flex";
+}
+document.getElementById("btnSaveEdit").addEventListener("click", () => {
+    if (!editingItemId) return;
+    const found = findItemGlobal(editingItemId);
+    if (found) {
+        found.item.nome = document.getElementById("editItemName").value.trim() || "Item";
+        found.item.imgUrl = document.getElementById("editItemUrl").value.trim();
+        found.item.descricao = document.getElementById("editItemDesc").value.trim();
+        const selectedCat = document.getElementById("editItemCategory").value;
+        found.item.category = selectedCat; found.item.color = CATEGORIES[selectedCat];
+        saveState();
+    }
+    document.getElementById("editModal").style.display = "none";
+});
+document.getElementById("btnCancelEdit").addEventListener("click", () => document.getElementById("editModal").style.display = "none");
+
+document.getElementById("btnDeleteEdit").addEventListener("click", () => {
+    if (!editingItemId) return;
+    deleteItem(editingItemId);
+    document.getElementById("editModal").style.display = "none";
+});
+
+function deleteItem(id) {
+    if (activeItemPreview && activeItemPreview.id === id) activeItemPreview = null;
+    const currentTab = getCurrentTab();
+    currentTab.items = currentTab.items.filter(i => i.id !== id);
+    currentTab.weightlessItems = currentTab.weightlessItems.filter(i => i.id !== id);
+    saveState();
+}
+
+function openConfigModal(tabId) {
+    editingTabConfigId = tabId;
+    const targetTab = state.tabs.find(t => t.id === tabId);
+    if (!targetTab) return;
+    document.getElementById("configCols").value = targetTab.config.cols;
+    document.getElementById("configRows").value = targetTab.config.rows;
+    document.getElementById("configModal").style.display = "flex";
+}
+document.getElementById("btnSaveConfig").addEventListener("click", () => {
+    if (!editingTabConfigId) return;
+    const targetTab = state.tabs.find(t => t.id === editingTabConfigId);
+    const c = parseInt(document.getElementById("configCols").value);
+    const r = parseInt(document.getElementById("configRows").value);
+    if (targetTab && c >= 4 && r >= 4) { targetTab.config.cols = c; targetTab.config.rows = r; saveState(); }
+    document.getElementById("configModal").style.display = "none";
+});
+document.getElementById("btnCancelConfig").addEventListener("click", () => document.getElementById("configModal").style.display = "none");
+
+/* =====================================================
+   LÓGICA DE TRANSFERÊNCIA DE ITENS ENTRE BOLSAS
+   ===================================================== */
+function openTransferModal(itemId) {
+    const availableTabs = state.tabs.filter(t => t.id !== currentTabId);
+    if (availableTabs.length === 0) {
+        alert("Não há outras bolsas para transferir este item. Crie uma nova bolsa primeiro.");
+        return;
+    }
+    transferringItemId = itemId;
+    const select = document.getElementById("transferBagSelect");
+    select.innerHTML = "";
+    availableTabs.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.name;
+        select.appendChild(opt);
+    });
+    document.getElementById("transferModal").style.display = "flex";
+}
+
+document.getElementById("btnCancelTransfer").addEventListener("click", () => {
+    document.getElementById("transferModal").style.display = "none";
+    transferringItemId = null;
+});
+
+document.getElementById("btnConfirmTransfer").addEventListener("click", () => {
+    if (!transferringItemId) return;
+    const targetTabId = document.getElementById("transferBagSelect").value;
+    const sourceTab = getCurrentTab();
+    const targetTab = state.tabs.find(t => t.id === targetTabId);
+    if (!targetTab) return;
+
+    // Verificar se é um item de grid
+    const itemIndex = sourceTab.items.findIndex(i => i.id === transferringItemId);
+    if (itemIndex !== -1) {
+        const item = sourceTab.items[itemIndex];
+        const space = findFreeSpaceInTab(targetTab, item.w, item.h);
+        
+        if (space) {
+            item.x = space.x;
+            item.y = space.y;
+            item.grid = 'main'; // Força para o grid principal da nova bolsa
+            
+            sourceTab.items.splice(itemIndex, 1);
+            targetTab.items.push(item);
+            
+            // Limpa o cursor de preview se o usuário estava movendo o item
+            if (activeItemPreview && activeItemPreview.id === item.id) activeItemPreview = null;
+            
+            saveState();
+            document.getElementById("transferModal").style.display = "none";
+            transferringItemId = null;
+            renderAll();
+        } else {
+            alert("Aviso: Não há espaço livre suficiente na bolsa de destino!");
+        }
+        return;
+    }
+
+    // Verificar se é um item sem peso
+    const wItemIndex = sourceTab.weightlessItems.findIndex(i => i.id === transferringItemId);
+    if (wItemIndex !== -1) {
+        const item = sourceTab.weightlessItems[wItemIndex];
+        sourceTab.weightlessItems.splice(wItemIndex, 1);
+        targetTab.weightlessItems.push(item);
+        
+        saveState();
+        document.getElementById("transferModal").style.display = "none";
+        transferringItemId = null;
+        renderAll();
+        return;
+    }
+});
+
+// Encontra o primeiro espaço livre num grid alvo
+function findFreeSpaceInTab(targetTab, w, h) {
+    const cols = targetTab.config.cols;
+    const rows = targetTab.config.rows;
+    for (let r = 0; r <= rows - h; r++) {
+        for (let c = 0; c <= cols - w; c++) {
+            let collision = false;
+            for (let item of targetTab.items) {
+                if (item.grid !== 'main') continue;
+                const overlapX = c < item.x + item.w && c + w > item.x;
+                const overlapY = r < item.y + item.h && r + h > item.y;
+                if (overlapX && overlapY) { collision = true; break; }
+            }
+            if (!collision) return {x: c, y: r};
+        }
+    }
+    return null;
+}
+</script>
+</body>
+</html>
