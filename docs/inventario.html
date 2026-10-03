@@ -33,12 +33,13 @@ html, body {
     .autocomplete-items { background-color: #fff !important; border-color: #bbb !important; }
     .autocomplete-item { color: #191919 !important; border-bottom-color: #eee !important; }
     .autocomplete-item:hover { background-color: #e9e9e9 !important; }
+    .equipped-slot-icon { color: #000000 !important; opacity: 0.2 !important; }
 }
 * { box-sizing: border-box; }
 
 .status-container {
     width: 100%;
-    max-width: 950px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 10px;
 }
@@ -83,7 +84,7 @@ html, body {
 .btn-tab-add {
     background: transparent; border: 1px dashed #555; color: #aaa;
     padding: 4px 12px; border-radius: 6px 6px 0 0; cursor: pointer;
-    font-size: 16px; font-weight: bold;
+    font-size: 12px; font-weight: bold;
 }
 .btn-tab-add:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #888; }
 
@@ -92,24 +93,26 @@ html, body {
    PAINEL DE FORMULÁRIO (CRIAR ITEM E PESQUISA)
    ===================================================== */
 .form-panel {
-    background: rgba(0,0,0,0.2); border-radius: 6px; padding: 10px; margin-bottom: 15px;
-    display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid rgba(255,255,255,0.05);
+    width: 845px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 10px; margin-bottom: 10px;
+    display: flex; gap: 8px; flex-wrap: wrap; border: 1px solid rgba(255,255,255,0.05);
 }
-.form-panel-title { width: 100%; font-size: 10px; font-weight: bold; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
+.form-panel-title { width: 100%; font-size: 11px; font-weight: bold; color: #aaa; margin-bottom: 0px; text-transform: uppercase; }
 .form-panel input, .form-panel button {
     background: #242424; border: 1px solid #444; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;
 }
+.form-group-spaces { display: flex; flex-direction: column; gap: 5px; margin-top: -16px; }
+.spaces-label { font-size: 10px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-left: 2px; }
 .form-panel input[type="number"] { width: 50px; }
 
 /* AUTOCOMPLETE (BARRA DE PESQUISA) */
-.autocomplete-container { position: relative; flex: 1; min-width: 140px; }
+.autocomplete-container { position: relative; width: 673px; min-width: 140px; }
 .autocomplete-container input { width: 100%; }
 .autocomplete-items {
     position: absolute; border: 1px solid #444; border-top: none;
     z-index: 99; top: 100%; left: 0; right: 0;
     max-height: 200px; overflow-y: auto;
     background-color: #242424; border-radius: 0 0 4px 4px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    box-shadow: 0 4px 00px rgba(0,0,0,0.8);
     display: none;
 }
 .autocomplete-item {
@@ -119,7 +122,7 @@ html, body {
 .autocomplete-item:hover { background-color: #383838; }
 .autocomplete-item-dim { color: #aaa; font-size: 9px; font-weight: bold; }
 
-.btn-add { background: #27b879 !important; border: none !important; font-weight: bold; cursor: pointer; transition: opacity 0.2s; color: #fff !important; }
+.btn-add { background: #27b879 !important; border: none !important; font-weight: bold; cursor: pointer; transition: opacity 0.2s; color: #fff !important; height: 26px; margin-top: -1px;}
 .btn-add:hover { opacity: 0.8; }
 
 /* =====================================================
@@ -145,13 +148,22 @@ html, body {
 .equipped-bg-container { position: relative; width: max-content; margin: 0 auto; }
 .equipped-bg {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff' opacity='0.06'%3E%3Cpath d='M12 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm4 9V6c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v5c0 .6.4 1.1.9 1.4L9 14l-2.1 6.3c-.2.6.2 1.3.9 1.3.5 0 1-.3 1.1-.8L10.3 16h3.4l1.4 4.8c.2.5.7.8 1.1.8.7 0 1.1-.7.9-1.3L15 14l2.1-1.6c.5-.3.9-.8.9-1.4z'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: center; background-size: contain;
     pointer-events: none; z-index: 0;
 }
 .equipped-cell {
     background: rgba(42, 42, 42, 0.5); 
     border-style: dashed; border-color: #555; z-index: 1; position: relative;
+    display: flex; align-items: center; justify-content: center;
+}
+.equipped-slot-icon {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.25;
+    color: #ffffff;
+    pointer-events: none;
+    z-index: 0;
 }
 
 /* Alerta de Sobrecarga */
@@ -175,7 +187,7 @@ html, body {
 }
 .weightless-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px; margin-bottom: 10px; }
 .weightless-header h4 { margin: 0; font-size: 11px; color: #aaa; text-transform: uppercase; }
-.btn-add-weightless { padding: 4px 8px; font-size: 10px; border-radius: 4px; }
+.btn-add-weightless { padding: 4px 8px; font-size: 10px; border-radius: 4px; height: auto; }
 .weightless-list { display: flex; flex-direction: column; gap: 6px; }
 .weightless-item { background: #2a2a2a; border: 1px solid; padding: 6px 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; position: relative; }
 .weightless-item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
@@ -256,16 +268,19 @@ html, body {
         <div id="tabsContainer" class="tabs-container"></div>
 
         <div class="form-panel">
-            <div class="form-panel-title">Criar ou Buscar Item na Bolsa Atual</div>
+            <div class="form-panel-title">Adicionar Item</div>
             
             <div class="autocomplete-container">
-                <input type="text" id="itemName" placeholder="Pesquisar ou Criar (ex: Espada)" autocomplete="off">
+                <input type="text" id="itemName" placeholder="Pesquisar ou Criar (ex: Pistola)" autocomplete="off">
                 <div id="autocompleteList" class="autocomplete-items"></div>
             </div>
 
-            <input type="number" id="itemW" placeholder="Lrg" min="1" max="8" value="1" title="Largura">
-            <input type="number" id="itemH" placeholder="Alt" min="1" max="6" value="2" title="Altura">
-            <button id="btnAddItem" class="btn-add" type="button">+ Add Item</button>
+            <div class="form-group-spaces">
+                <label for="itemSpaces" class="spaces-label">Espaços</label>
+                <input type="number" id="itemSpaces" placeholder="Ex: 4" min="1" max="64" value="2" title="Quantidade de Espaços do Item">
+            </div>
+
+            <button id="btnAddItem" class="btn-add" type="button">+ Novo Item</button>
         </div>
 
         <div id="inventoriesContainer"></div>
@@ -377,6 +392,119 @@ const CELL_SIZE = 72;
 const CELL_GAP = 3;
 const EQUIPPED_COLS = 7;
 
+// Ícones SVG para os campos de equipamentos vestíveis (da esquerda para a direita)
+const EQUIPPED_ICONS = [
+    // 0: Cabeça
+    `<div class="cabeca">
+  <svg version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg" width="38px" height="38px" viewBox="0 0 512 512">
+    <style type="text/css">
+      .st0{fill:#363636;}
+    </style>
+    <g>
+      <path class="st0" d="M475.606,295.503L434.2,207.722c0.109-2.625,0.203-5.25,0.203-7.906c0-110.344-89.469-199.813-199.828-199.813 S34.747,89.472,34.747,199.815c0,62.063,28.281,117.516,72.672,154.172v70.625c0,6.891,4.109,13.125,10.453,15.813l165.5,70.203 c5.297,2.25,11.375,1.703,16.172-1.469c4.813-3.188,7.703-8.563,7.703-14.313v-59.859c0-9.469,7.688-17.172,17.156-17.172h84.766 c9.484,0,17.156-7.688,17.156-17.156V349.05c0-6.578,3.766-12.578,9.672-15.453l31.578-15.328 C476.044,314.144,479.622,304.003,475.606,295.503z"/>
+    </g>
+  </svg>
+</div>`,
+    // 1: Tórax
+    `<div class = "torax">
+    <svg fill="#333333" height="45px" width="42px" version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+	 viewBox="0 0 32 32" xml:space="preserve">
+<g>
+	<path d="M21,24h3c0.6,0,1-0.4,1-1v-3h-5v3C20,23.6,20.4,24,21,24z"/>
+	<path d="M8,24h3c0.6,0,1-0.4,1-1v-3H7v3C7,23.6,7.4,24,8,24z"/>
+</g>
+<g>
+	<path d="M15,23h-1c0,1.7-1.3,3-3,3H8c-1.7,0-3-1.3-3-3H2v6c0,0.6,0.4,1,1,1h9c1.1,0,2.2-0.4,3-1V23z"/>
+	<path d="M27,23c0,1.7-1.3,3-3,3h-3c-1.7,0-3-1.3-3-3h-1v6c0.8,0.7,1.9,1,3,1h9c0.6,0,1-0.4,1-1v-6H27z"/>
+</g>
+<g>
+	<path d="M15,21v-4H2v4h3v-2c0-0.6,0.4-1,1-1h7c0.6,0,1,0.4,1,1v2H15z"/>
+	<path d="M17,17v4h1v-2c0-0.6,0.4-1,1-1h7c0.6,0,1,0.4,1,1v2h3v-4H17z"/>
+</g>
+<g>
+	<path d="M17,15h13c0-0.5-0.3-0.9-0.8-1c-1.9-0.5-3.2-2.2-3.2-4.2V3c0-0.6-0.4-1-1-1h-3c-0.4,0-0.7,0.2-0.9,0.5L17,9.4V15z"/>
+	<path d="M15,9.4l-4.1-6.9C10.7,2.2,10.4,2,10,2H7C6.4,2,6,2.4,6,3v6.9c0,2-1.3,3.7-3.2,4.2C2.3,14.1,2,14.5,2,15h13V9.4z"/>
+	</g>
+	</svg>
+</div>`,
+    // 2: Tórax
+    `<div class = "torax">
+    <svg fill="#333333" height="45px" width="42px" version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+	 viewBox="0 0 32 32" xml:space="preserve">
+<g>
+	<path d="M21,24h3c0.6,0,1-0.4,1-1v-3h-5v3C20,23.6,20.4,24,21,24z"/>
+	<path d="M8,24h3c0.6,0,1-0.4,1-1v-3H7v3C7,23.6,7.4,24,8,24z"/>
+</g>
+<g>
+	<path d="M15,23h-1c0,1.7-1.3,3-3,3H8c-1.7,0-3-1.3-3-3H2v6c0,0.6,0.4,1,1,1h9c1.1,0,2.2-0.4,3-1V23z"/>
+	<path d="M27,23c0,1.7-1.3,3-3,3h-3c-1.7,0-3-1.3-3-3h-1v6c0.8,0.7,1.9,1,3,1h9c0.6,0,1-0.4,1-1v-6H27z"/>
+</g>
+<g>
+	<path d="M15,21v-4H2v4h3v-2c0-0.6,0.4-1,1-1h7c0.6,0,1,0.4,1,1v2H15z"/>
+	<path d="M17,17v4h1v-2c0-0.6,0.4-1,1-1h7c0.6,0,1,0.4,1,1v2h3v-4H17z"/>
+</g>
+<g>
+	<path d="M17,15h13c0-0.5-0.3-0.9-0.8-1c-1.9-0.5-3.2-2.2-3.2-4.2V3c0-0.6-0.4-1-1-1h-3c-0.4,0-0.7,0.2-0.9,0.5L17,9.4V15z"/>
+	<path d="M15,9.4l-4.1-6.9C10.7,2.2,10.4,2,10,2H7C6.4,2,6,2.4,6,3v6.9c0,2-1.3,3.7-3.2,4.2C2.3,14.1,2,14.5,2,15h13V9.4z"/>
+	</g>
+	</svg>
+</div>`,
+    // 3: Tórax
+    `<div class = "torax">
+    <svg fill="#333333" height="45px" width="42px" version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+	 viewBox="0 0 32 32" xml:space="preserve">
+<g>
+	<path d="M21,24h3c0.6,0,1-0.4,1-1v-3h-5v3C20,23.6,20.4,24,21,24z"/>
+	<path d="M8,24h3c0.6,0,1-0.4,1-1v-3H7v3C7,23.6,7.4,24,8,24z"/>
+</g>
+<g>
+	<path d="M15,23h-1c0,1.7-1.3,3-3,3H8c-1.7,0-3-1.3-3-3H2v6c0,0.6,0.4,1,1,1h9c1.1,0,2.2-0.4,3-1V23z"/>
+	<path d="M27,23c0,1.7-1.3,3-3,3h-3c-1.7,0-3-1.3-3-3h-1v6c0.8,0.7,1.9,1,3,1h9c0.6,0,1-0.4,1-1v-6H27z"/>
+</g>
+<g>
+	<path d="M15,21v-4H2v4h3v-2c0-0.6,0.4-1,1-1h7c0.6,0,1,0.4,1,1v2H15z"/>
+	<path d="M17,17v4h1v-2c0-0.6,0.4-1,1-1h7c0.6,0,1,0.4,1,1v2h3v-4H17z"/>
+</g>
+<g>
+	<path d="M17,15h13c0-0.5-0.3-0.9-0.8-1c-1.9-0.5-3.2-2.2-3.2-4.2V3c0-0.6-0.4-1-1-1h-3c-0.4,0-0.7,0.2-0.9,0.5L17,9.4V15z"/>
+	<path d="M15,9.4l-4.1-6.9C10.7,2.2,10.4,2,10,2H7C6.4,2,6,2.4,6,3v6.9c0,2-1.3,3.7-3.2,4.2C2.3,14.1,2,14.5,2,15h13V9.4z"/>
+	</g>
+	</svg>
+</div>`,
+    // 4: Calça
+    `<div class = "calca">
+		<svg width="45px" height="45px" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="#333333" d="M250.45 19.767c-44.556.187-87.24 7.376-118.562 21-16.176 147.458-32.792 298.827-46.72 425.75l123.344 24.814 34.157-262.844h20.63l34.25 263.75h.218l129.063-26.28c-15.71-141.714-31.023-283.473-46.724-425.19-38.697-14.307-85.098-21.17-129.655-21z"/></svg>
+</div>`,
+    // 5: Botas
+    `<div class = "bota">
+		<svg height="35px" width="35px" version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+	 viewBox="0 0 512 512"  xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#333333;}
+</style>
+<g>
+	<path class="st0" d="M499.378,453.571c-7.532,2.046-15.868,3.087-25.175,3.087c-0.004,0-0.004,0-0.004,0
+		c-17.27,0-36.183-3.292-56.21-6.787c-18.726-3.273-38.093-6.648-53.351-6.648c-32.143,0-59.171,8.313-85.308,16.346
+		c-14.835,4.565-28.842,8.879-43.519,11.696c-14.82,2.864-39.674,4.306-73.867,4.306c-53.081,0-126.99-3.794-158.784-10.116
+		c-0.562-0.103-1.669-0.353-3.161-0.782v22.325c0,13.426,10.882,24.314,24.309,24.314h232.237l94.09-35.788
+		c1.869-0.706,3.966-0.446,5.611,0.688c1.641,1.124,2.627,3.003,2.627,5.002v24.025c0,3.348,2.725,6.072,6.076,6.072h118.06
+		c13.426,0,24.309-10.888,24.309-24.314c0,0,0-18.326,0-24.584C507.318,456.146,502.134,452.827,499.378,453.571z"/>
+	<path class="st0" d="M18.734,449.164c40.99,8.155,171.508,5.755,208.983-1.441c37.476-7.206,79.269-28.824,136.92-28.824
+		c57.647,0,130.686,29.503,139.882,3.106c16.276-46.694,2.798-111.202-10.172-147.232c-12.97-36.038-6.647-222.981-4.323-239.252
+		c2.888-20.176-2.877-34.588-33.142-34.588c-30.269,0-155.66,1.432-168.635,0c-12.97-1.432-28.108,2.892-28.108,28.108
+		c0,25.225,0,193.841,0,198.174c0,4.324-111.694,95.108-143.4,102.323c-31.706,7.205-87.577,7.54-109.533,49
+		c-12.97,24.5-2.882,44.676-2.882,51.892C4.324,437.644,11.524,447.732,18.734,449.164z M279.391,121.229h27.312
+		c8.229,0,14.896,6.685,14.896,14.914c0,8.228-6.667,14.886-14.896,14.886h-27.312V121.229z M279.391,191.976h27.312
+		c8.229,0,14.896,6.676,14.896,14.905c0,8.228-6.667,14.886-14.896,14.886h-27.312V191.976z M246.048,259.404l16.308,21.896
+		c4.918,6.601,3.548,15.936-3.054,20.845c-6.606,4.918-15.922,3.552-20.84-3.059l-16.308-21.896L246.048,259.404z M186.124,308.924
+		l16.309,21.897c4.918,6.601,3.546,15.936-3.054,20.845c-6.607,4.919-15.923,3.552-20.842-3.059l-16.308-21.896L186.124,308.924z"/>
+</g>
+</svg>
+</div>`,
+    // 6: Vazio (Acessório)
+    ""
+];
+
 const CATEGORIES = {
     "default": { bg: "rgba(49, 140, 255, 0.4)", border: "#318cff" },
     "consumable": { bg: "rgba(39, 184, 121, 0.4)", border: "#27b879" },
@@ -384,6 +512,23 @@ const CATEGORIES = {
     "weapon": { bg: "rgba(255, 165, 0, 0.4)",  border: "#ffa500" },
     "key": { bg: "rgba(200, 50, 50, 0.4)",  border: "#ff4b4b" }
 };
+
+/* =====================================================
+   CÁLCULO DE DIMENSÕES PROPORCIONAIS
+   ===================================================== */
+function calculateProportionalDimensions(spaces) {
+    let n = parseInt(spaces) || 1;
+    if (n < 1) n = 1;
+    let h = Math.floor(Math.sqrt(n));
+    while (h > 0) {
+        if (n % h === 0) {
+            let w = n / h;
+            return { w: Math.max(w, h), h: Math.min(w, h) };
+        }
+        h--;
+    }
+    return { w: n, h: 1 };
+}
 
 /* =====================================================
    BANCO DE DADOS DE ITENS PRÉ-PRONTOS
@@ -437,12 +582,12 @@ function renderAutocompleteResults(results) {
             
             const categoryLabels = { default: 'Geral', consumable: 'Consumível', special: 'Especial', weapon: 'Arma', key: 'Chave' };
             const catText = categoryLabels[item.category] || 'Geral';
+            const totalSpaces = item.w * item.h;
             
-            div.innerHTML = `<span>${item.nome}</span> <span class="autocomplete-item-dim">${item.w}x${item.h} | ${catText}</span>`;
+            div.innerHTML = `<span>${item.nome}</span> <span class="autocomplete-item-dim">${totalSpaces} esp. | ${catText}</span>`;
             div.addEventListener("click", () => {
                 itemNameInput.value = item.nome;
-                document.getElementById("itemW").value = item.w;
-                document.getElementById("itemH").value = item.h;
+                document.getElementById("itemSpaces").value = item.w * item.h;
                 selectedPredefinedItem = item;
                 autocompleteList.innerHTML = "";
                 autocompleteList.style.display = "none";
@@ -456,7 +601,7 @@ function renderAutocompleteResults(results) {
 
 itemNameInput.addEventListener("input", function() {
     const val = this.value;
-    selectedPredefinedItem = null; // Reseta o item predefinido se o jogador mudar o texto
+    selectedPredefinedItem = null;
     if (!val) {
         autocompleteList.style.display = "none";
         return;
@@ -551,7 +696,6 @@ function renderAll() {
         cfg.onclick = (e) => { e.stopPropagation(); openConfigModal(tab.id); };
         actionsSpan.appendChild(cfg);
 
-        // Apenas bolsas secundárias podem ser excluídas (A primeira bolsa principal não pode)
         const isPrimary = (index === 0 || tab.id === "tab_main");
         if (!isPrimary) {
             const del = document.createElement("span");
@@ -577,7 +721,7 @@ function renderAll() {
         const name = prompt("Nome da nova bolsa/aba:");
         if (name && name.trim() !== "") {
             const newId = "tab_" + Date.now();
-            state.tabs.push({ id: newId, name: name.trim(), items: [], weightlessItems: [], config: { cols: 8, rows: 6 } });
+            state.tabs.push({ id: newId, name: name.trim(), items: [], weightlessItems: [], config: { cols: 6, rows: 4 } });
             currentTabId = newId; saveState();
         }
     };
@@ -617,7 +761,7 @@ function renderAll() {
             <div class="weightless-panel" id="weightlessBox">
                 <div class="weightless-header">
                     <h4>Itens sem Peso</h4>
-                    <button id="btnOpenAddWeightless" class="btn-add btn-add-weightless" type="button">+ Add Item</button>
+                    <button id="btnOpenAddWeightless" class="btn-add btn-add-weightless" type="button">+ Novo Item</button>
                 </div>
                 <div class="weightless-list" id="weightlessList"></div>
             </div>
@@ -644,12 +788,15 @@ function renderAll() {
         }
     }
 
-    // Gerar Células Grid Equipamentos (Apenas na Bolsa Principal)
+    // Gerar Células Grid Equipamentos (Com os ícones vestíveis)
     if (isCurrentMain && equippedGrid) {
         for (let c = 0; c < EQUIPPED_COLS; c++) {
             const cell = document.createElement("div");
             cell.className = "grid-cell equipped-cell";
             cell.style.gridColumn = `${c + 1}`; cell.style.gridRow = `1`;
+            if (EQUIPPED_ICONS[c]) {
+                cell.innerHTML = EQUIPPED_ICONS[c];
+            }
             equippedGrid.appendChild(cell);
         }
     }
@@ -781,7 +928,6 @@ function renderAll() {
     let hasOverload = false;
     const overloadRowIndex = rows - 1;
 
-    // Checar itens já posicionados
     currentTab.items.forEach(item => {
         if (item.grid === 'main') {
             const itemBottom = item.y + item.h - 1;
@@ -789,7 +935,6 @@ function renderAll() {
         }
     });
 
-    // Checar também o item que o usuário está segurando
     if (activeItemPreview && activeItemPreview.grid === 'main') {
         const previewBottom = activeItemPreview.y + activeItemPreview.h - 1;
         if (previewBottom >= overloadRowIndex) hasOverload = true;
@@ -808,7 +953,6 @@ function canPlaceItem(id, targetX, targetY, w, h, targetGrid = 'main') {
     const currentTab = getCurrentTab();
     const isCurrentMain = isMainTab(currentTab.id);
 
-    // Se for bolsa secundária, forçar a grid ser 'main'
     if (!isCurrentMain && targetGrid === 'equipped') return false;
 
     if (targetGrid === 'main') {
@@ -955,21 +1099,35 @@ document.getElementById("btnAddItem").addEventListener("click", () => {
     if(!currentTab) return;
 
     const nome = document.getElementById("itemName").value.trim() || "Item";
-    const w = parseInt(document.getElementById("itemW").value) || 1;
-    const h = parseInt(document.getElementById("itemH").value) || 1;
-    const cols = currentTab.config.cols;
-    const rows = currentTab.config.rows;
-
+    const spacesInput = parseInt(document.getElementById("itemSpaces").value) || 1;
+    
+    let w, h;
     let category = "default";
     let descricao = "";
     let imgUrl = "";
 
-    // Verifica se o item sendo criado foi selecionado pela base de dados
     if (selectedPredefinedItem && selectedPredefinedItem.nome === nome) {
         category = selectedPredefinedItem.category || "default";
         descricao = selectedPredefinedItem.descricao || "";
         imgUrl = selectedPredefinedItem.imgUrl || "";
+        
+        // Se o número de espaços for igual ao do item pré-definido, mantemos a dimensão original
+        if (spacesInput === selectedPredefinedItem.w * selectedPredefinedItem.h) {
+            w = selectedPredefinedItem.w;
+            h = selectedPredefinedItem.h;
+        } else {
+            const dims = calculateProportionalDimensions(spacesInput);
+            w = dims.w;
+            h = dims.h;
+        }
+    } else {
+        const dims = calculateProportionalDimensions(spacesInput);
+        w = dims.w;
+        h = dims.h;
     }
+
+    const cols = currentTab.config.cols;
+    const rows = currentTab.config.rows;
 
     const newItemBase = {
         id: "item_" + Date.now(), grid: 'main',
@@ -1111,7 +1269,6 @@ document.getElementById("btnConfirmTransfer").addEventListener("click", () => {
     const targetTab = state.tabs.find(t => t.id === targetTabId);
     if (!targetTab) return;
 
-    // Verificar se é um item de grid
     const itemIndex = sourceTab.items.findIndex(i => i.id === transferringItemId);
     if (itemIndex !== -1) {
         const item = sourceTab.items[itemIndex];
@@ -1120,12 +1277,11 @@ document.getElementById("btnConfirmTransfer").addEventListener("click", () => {
         if (space) {
             item.x = space.x;
             item.y = space.y;
-            item.grid = 'main'; // Força para o grid principal da nova bolsa
+            item.grid = 'main';
             
             sourceTab.items.splice(itemIndex, 1);
             targetTab.items.push(item);
             
-            // Limpa o cursor de preview se o usuário estava movendo o item
             if (activeItemPreview && activeItemPreview.id === item.id) activeItemPreview = null;
             
             saveState();
@@ -1138,7 +1294,6 @@ document.getElementById("btnConfirmTransfer").addEventListener("click", () => {
         return;
     }
 
-    // Verificar se é um item sem peso
     const wItemIndex = sourceTab.weightlessItems.findIndex(i => i.id === transferringItemId);
     if (wItemIndex !== -1) {
         const item = sourceTab.weightlessItems[wItemIndex];
@@ -1153,7 +1308,6 @@ document.getElementById("btnConfirmTransfer").addEventListener("click", () => {
     }
 });
 
-// Encontra o primeiro espaço livre num grid alvo
 function findFreeSpaceInTab(targetTab, w, h) {
     const cols = targetTab.config.cols;
     const rows = targetTab.config.rows;
