@@ -1,0 +1,3030 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Rolador de Dados 1.1.0 — IMP-256</title>
+    <style>
+      
+ /* ================================================================================ //
+		CRÉDITOS: Esse arquivo é uma tradução/adaptação direta do código do DMCG Design
+		obtido no template Notion, traduzido para a ficha de RPG da Verum.
+		Fonte Original: https://www.notion.com/pt/templates/roll-ready
+// ================================================================================= */
+
+      /* ==========================================================================
+         1. Design tokens and theme overrides
+         ========================================================================== */
+      :root {
+        --font:
+          ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        --text: #fff;
+        --muted: #b8b8b6;
+        --canvas: #191919;
+        --surface: #202020;
+        --surface-2: #383836;
+        --border: #6d6d69;
+        --blue: #8fc7ff;
+        --blue-soft: rgba(94, 159, 232, 0.14);
+        --green: #8cd8a7;
+        --green-soft: rgba(114, 188, 143, 0.14);
+        --green-muted: rgba(114, 188, 143, 0.08);
+        --green-muted-border: #5f8a6f;
+        --orange: #f0ad73;
+        --orange-soft: rgba(222, 146, 85, 0.14);
+        --red: #ff9a91;
+        --red-soft: rgba(233, 115, 102, 0.14);
+        --red-muted: rgba(233, 115, 102, 0.08);
+        --red-muted-border: #96615c;
+        --on-blue: #101010;
+        --focus: 0 0 0 3px rgba(143, 199, 255, 0.42);
+        --control-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-6: 24px;
+        --space-8: 32px;
+        --radius: 8px;
+        --radius-lg: 12px;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.36), 0 4px 12px rgba(0, 0, 0, 0.28);
+      }
+
+      html {
+        color-scheme: dark;
+      }
+
+      /*
+       * IMP-203 — Persisted flyout theme switcher.
+       * Semantic token overrides keep every existing component coherent while
+       * preserving dark as the default and the data-theme contract.
+       */
+      html[data-theme="light"] {
+        color-scheme: light;
+        --text: #2c2c2b;
+        --muted: #5c5955;
+        --canvas: #fff;
+        --surface: #f9f8f7;
+        --surface-2: #f0efed;
+        --border: #92908a;
+        --blue: #066ec7;
+        --blue-soft: #e5f2fc;
+        --green: #287a4d;
+        --green-soft: #e8f1ec;
+        --green-muted: #f3f8f5;
+        --green-muted-border: #82ad95;
+        --orange: #a85d1f;
+        --orange-soft: #fbebde;
+        --red: #a9362f;
+        --red-soft: #fce9e7;
+        --red-muted: #fdf4f3;
+        --red-muted-border: #c98f8a;
+        --on-blue: #fff;
+        --focus: 0 0 0 3px rgba(6, 110, 199, 0.3);
+        --control-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.04);
+      }
+
+      /* ==========================================================================
+         2. Reset and base elements
+         ========================================================================== */
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font: 16px/1.5 var(--font);
+        background: var(--canvas);
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      /* ==========================================================================
+         3. App layout and typography
+         ========================================================================== */
+      /*
+       * IMP-207 — Foundation standard responsive shell profile.
+       * The shell owns container, header, and main-region geometry while the
+       * Dice Roller controls and rolling behaviour remain product-owned.
+       */
+      .app {
+        width: 100%;
+        max-width: 1120px;
+        min-width: 0;
+        margin: auto;
+        padding: var(--space-6);
+      }
+
+      /* IMP-256 — Retain the header divider without reserving title space. */
+      .header.app-header {
+        min-height: 1px;
+        padding-bottom: 0;
+      }
+
+      .header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        min-width: 0;
+        gap: var(--space-4);
+        padding-bottom: var(--space-2);
+        border-bottom: 1px solid var(--border);
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+      }
+
+      .roller-panel h2 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+      }
+
+      .subtle {
+        margin-top: var(--space-1);
+        color: var(--muted);
+      }
+
+      .eyebrow,
+      .result-kicker {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .result-label {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding-top: var(--space-4);
+        color: var(--muted);
+        font-size: 14px;
+        border-top: 1px solid var(--border);
+      }
+
+      /* ==========================================================================
+         4. Shared primitives
+         ========================================================================== */
+      .card {
+        min-width: 0;
+        padding: var(--space-4);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px var(--space-2);
+        color: var(--blue);
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        background: var(--blue-soft);
+        border-radius: 999px;
+      }
+
+      button {
+        min-height: 44px;
+        padding: 0 var(--space-3);
+        color: var(--text);
+        font-weight: 600;
+        background: var(--surface-2);
+        border: 1px solid transparent;
+        border-radius: var(--radius);
+        cursor: pointer;
+      }
+
+      label {
+        display: grid;
+        gap: var(--space-1);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .quantity {
+        width: 56px;
+        min-height: 44px;
+        padding: 0 var(--space-2);
+        color: var(--text);
+        font-weight: 700;
+        text-align: center;
+        background: var(--canvas);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        appearance: none;
+      }
+
+      .modifier-input {
+        width: 96px;
+        min-height: 44px;
+        padding: 0 var(--space-2);
+        color: var(--text);
+        font-weight: 700;
+        text-align: center;
+        background: var(--canvas);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      .modifier-input:disabled {
+        color: var(--muted);
+        background: var(--surface-2);
+        cursor: not-allowed;
+      }
+
+      .formula-input {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        padding: 0 var(--space-3);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 14px;
+        background: var(--canvas);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      .formula-roll {
+        min-width: 64px;
+        min-height: 44px;
+        color: var(--on-blue);
+        background: var(--blue);
+      }
+
+      .mode-controls {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        padding: 3px;
+        gap: 4px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      .mode {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0 6px;
+        font-size: 12px;
+        letter-spacing: 0.03em;
+        background: transparent;
+      }
+
+      .roll {
+        width: 100%;
+        min-height: 48px;
+        margin-top: var(--space-3);
+        color: var(--on-blue);
+        font-weight: 600;
+        background: var(--blue);
+      }
+
+      /* ==========================================================================
+         5. Shell profiles — Foundation standard tool shell
+         ========================================================================== */
+      .main {
+        display: block;
+        min-width: 0;
+        padding: var(--space-3) 0;
+      }
+
+      /*
+       * IMP-209 — Dense rolling workspace.
+       * The product controls now share one content-height panel while preserving
+       * every existing ID, data contract, shell region, and rolling transition.
+       */
+      .roller-panel {
+        width: 100%;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+
+      .workspace-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: var(--space-3);
+      }
+
+      .workspace-note {
+        color: var(--muted);
+        font-size: 13px;
+        text-align: right;
+      }
+
+      /*
+       * IMP-217 — Standard d100 control.
+       * The seventh control wraps at narrow widths so every 44px target remains
+       * legible and selectable without horizontal overflow.
+       */
+      .picker {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(44px, 1fr));
+        gap: 6px;
+        margin-top: 0;
+      }
+
+      /*
+       * IMP-245 — Selected-group contextual controls.
+       * The former pool summary becomes one compact editor for the active
+       * group's modifier and mode; quantity remains owned by the dice tiles.
+       */
+      .active-group-strip {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-3);
+        margin-top: var(--space-3);
+        padding: var(--space-2);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      .active-group-strip[hidden] {
+        display: none;
+      }
+
+      .clear-pool {
+        flex: 0 0 auto;
+        min-height: 44px;
+        background: var(--canvas);
+        border-color: var(--border);
+      }
+
+      .control-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 340px);
+        align-items: end;
+        gap: var(--space-3);
+        margin-top: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border);
+      }
+
+      .quantity-row,
+      .mode-row {
+        min-width: 0;
+      }
+
+      .quantity-row {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: var(--space-3);
+      }
+
+      .mode-row {
+        display: grid;
+        gap: 6px;
+      }
+
+      .quantity-copy {
+        min-width: 0;
+      }
+
+      .quantity-copy .subtle {
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .quantity-control {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /*
+       * IMP-243 — Active-group modifier editor.
+       * This separate field keeps the approved manual Modifier independent.
+       */
+      .group-modifier-row {
+        display: grid;
+        grid-template-columns: auto auto;
+        align-items: center;
+        justify-content: start;
+        min-width: 0;
+        gap: var(--space-2);
+      }
+
+      .field-error {
+        margin-top: var(--space-1);
+        color: var(--red);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.35;
+      }
+
+      /*
+       * IMP-227 — Formula is the canonical shared roll state.
+       * The clicker and valid Formula edits now update one another while the
+       * Formula action remains the only roll action.
+       */
+      .formula-panel {
+        display: grid;
+        gap: var(--space-2);
+        margin-top: var(--space-3);
+      }
+
+      .formula-copy {
+        min-width: 0;
+      }
+
+      .formula-copy .subtle {
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .formula-input-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: start;
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      .formula-field {
+        display: grid;
+        min-width: 0;
+      }
+
+      .stepper {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        font-weight: 700;
+      }
+
+      .result-card {
+        display: grid;
+        gap: var(--space-3);
+        margin-top: var(--space-3);
+        padding: var(--space-4);
+        background: var(--canvas);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      .result-card-header > div {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        width: 100%;
+        min-width: 0;
+        gap: 4px 12px;
+      }
+
+      .result-label {
+        overflow-wrap: anywhere;
+      }
+
+      .result-card-header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        min-width: 0;
+        gap: var(--space-3);
+      }
+
+      .result-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        min-width: 0;
+        min-height: 56px;
+        gap: var(--space-2) var(--space-4);
+      }
+
+      .results {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      /*
+       * IMP-223 — Die-shaped individual results.
+       * Result faces reuse the approved control geometry while keeping their
+       * own responsive size and preserving semantic retained-result colours.
+       */
+      .roll-value {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 48px;
+        height: 48px;
+        color: var(--text);
+      }
+
+      .roll-die-icon {
+        width: 48px;
+        height: 48px;
+        overflow: visible;
+        color: inherit;
+      }
+
+      .roll-die-face {
+        fill: var(--surface);
+        stroke: currentColor;
+        stroke-width: 1.35;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .roll-die-icon text {
+        fill: currentColor;
+        font: 700 10px var(--font);
+        text-anchor: middle;
+      }
+
+      .roll-value[data-sides="100"] .roll-die-icon text {
+        font-size: 8.5px;
+      }
+
+      .roll-modifier {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 0 var(--space-1);
+        color: var(--text);
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .empty-result {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        min-height: 44px;
+        gap: var(--space-2);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .empty-result::before {
+        content: "";
+        flex: 0 0 auto;
+        width: 10px;
+        height: 10px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        transform: rotate(45deg);
+      }
+
+      .total {
+        min-width: 92px;
+        margin: 0;
+        padding-left: var(--space-4);
+        font-size: 28px;
+        font-weight: 700;
+        text-align: right;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+        border-left: 1px solid var(--border);
+      }
+
+      .total span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .retained-note {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .modifier-breakdown {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .formula-results {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      .formula-result-group {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+        padding: 6px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      .formula-group-heading {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      .formula-group-label {
+        overflow-wrap: anywhere;
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .formula-group-total {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+
+      .formula-group-values {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      /* ==========================================================================
+         6. Navigation flyout
+         ========================================================================== */
+      /*
+       * IMP-255 baseline with IMP-257 rail-state refinements.
+       * Keep the three preferences in a narrow column below the fixed trigger.
+       */
+      .settings-flyout {
+        position: fixed;
+        z-index: 19;
+        top: 4px;
+        left: 3px;
+        display: block;
+        width: 46px;
+        min-width: 46px;
+        max-width: 46px;
+        padding: 43px 0 0;
+        overflow: visible;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+      }
+
+      .settings-flyout[hidden] {
+        display: none;
+      }
+
+      .settings-trigger {
+        position: fixed;
+        z-index: 20;
+        top: 4px;
+        left: 4px;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        color: var(--muted);
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+      }
+
+      .settings-trigger::before {
+        content: "";
+        position: absolute;
+        inset: 9px 10px 11px;
+        background: transparent;
+        border-radius: var(--radius);
+      }
+
+      .settings-trigger:hover:not(:disabled),
+      .settings-trigger:focus-visible,
+      .settings-trigger[aria-expanded="true"] {
+        color: var(--text);
+        background: transparent;
+        filter: none;
+      }
+
+      .settings-trigger:hover:not(:disabled)::before,
+      .settings-trigger:focus-visible::before {
+        background: var(--surface-2);
+      }
+
+      /* IMP-259 — Keep the closed hamburger's hover and keyboard-focus
+         treatment square. The rounded outer corners belong only to the open
+         rail state, where this control becomes the rail's top item. */
+      .settings-trigger[aria-expanded="false"]:hover:not(:disabled)::before,
+      .settings-trigger[aria-expanded="false"]:focus-visible::before {
+        border-radius: 0;
+      }
+
+      .settings-trigger[aria-expanded="true"]::before {
+        inset: 0;
+        background: var(--surface-2);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      }
+
+      /* Match the Battlemap Display's open-rail indicator without changing
+         the 44px target or the button's open/close behaviour. */
+      .settings-trigger[aria-expanded="true"]::after {
+        content: "";
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 3px;
+        background: var(--blue);
+        border-radius: var(--radius-lg) 0 0 0;
+        pointer-events: none;
+      }
+
+      .settings-trigger:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: -2px;
+        border-color: transparent;
+        box-shadow: none;
+      }
+
+      .settings-trigger svg {
+        position: relative;
+        z-index: 1;
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* IMP-252 — Inert animation and sound placeholders stay discoverable. */
+      .settings-rail {
+        position: static;
+        display: grid;
+        width: 44px;
+      }
+
+      .settings-soon {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        color: var(--muted);
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        opacity: 0.55;
+        cursor: default;
+      }
+
+      .settings-soon:active:not(:disabled),
+      .settings-soon:hover:not(:disabled),
+      .settings-soon:focus-visible {
+        color: var(--text);
+        background: var(--surface-2);
+        filter: none;
+        opacity: 0.85;
+      }
+
+      .settings-soon:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: -2px;
+        box-shadow: none;
+      }
+
+      .settings-soon svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .soon-tooltip {
+        position: absolute;
+        z-index: 22;
+        top: 50%;
+        left: calc(100% + 4px);
+        display: none;
+        padding: var(--space-1) var(--space-2);
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.3;
+        white-space: nowrap;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        pointer-events: none;
+        transform: translateY(-50%);
+      }
+
+      .settings-soon:hover .soon-tooltip,
+      .settings-soon:focus-visible .soon-tooltip {
+        display: block;
+      }
+
+      /* IMP-213 — Keep the existing icon-only persisted theme control. */
+      .theme-switch {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        color: var(--muted);
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+      }
+
+      /* The theme switch is the rail's bottom item: round only its outside
+         corners so the adjoining Sound/Theme seam remains square. */
+      .theme-switch:hover:not(:disabled),
+      .theme-switch:focus-visible {
+        color: var(--text);
+        background: var(--surface-2);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        filter: none;
+      }
+
+      .theme-switch:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: -2px;
+        border-color: transparent;
+        box-shadow: none;
+      }
+
+      .theme-switch svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .theme-switch .theme-icon--sun {
+        display: none;
+      }
+
+      html[data-theme="light"] .theme-switch .theme-icon--sun {
+        display: block;
+      }
+
+      html[data-theme="light"] .theme-switch .theme-icon--moon {
+        display: none;
+      }
+
+      /* ==========================================================================
+         7. Component states and modifiers
+         ========================================================================== */
+      .die {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        min-height: 76px;
+        gap: 2px;
+        padding: 6px 4px 5px;
+        background: var(--canvas);
+        border-color: var(--border);
+      }
+
+      .die-icon {
+        width: 34px;
+        height: 34px;
+        overflow: visible;
+        color: var(--muted);
+      }
+
+      .die-icon .die-face {
+        fill: var(--surface-2);
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .die-icon .die-detail {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.15;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .die-icon text {
+        fill: currentColor;
+        font: 700 9px var(--font);
+        text-anchor: middle;
+      }
+
+      .die-label {
+        font-size: 12px;
+        line-height: 1;
+      }
+
+      .die-count {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        display: none;
+        place-items: center;
+        width: 16px;
+        height: 16px;
+        color: var(--on-blue);
+        font-size: 10px;
+        line-height: 1;
+        background: var(--blue);
+        border-radius: 50%;
+      }
+
+      .die[data-count]:not([data-count="0"]) {
+        color: var(--text);
+        background: var(--surface-2);
+        border-color: var(--muted);
+      }
+
+      .die[data-count]:not([data-count="0"]) .die-icon {
+        color: var(--text);
+      }
+
+      .die[data-count]:not([data-count="0"]) .die-count {
+        display: grid;
+        color: var(--text);
+        background: var(--canvas);
+        border: 1px solid var(--muted);
+      }
+
+      .die[data-count][aria-pressed="true"] {
+        color: var(--blue);
+        background: var(--blue-soft);
+        border: 2px solid var(--blue);
+        padding: 5px 3px 4px;
+      }
+
+      .die[data-count][aria-pressed="true"] .die-icon {
+        color: var(--blue);
+      }
+
+      .die[data-count][aria-pressed="true"] .die-count {
+        display: grid;
+        color: var(--on-blue);
+        background: var(--blue);
+        border-color: var(--blue);
+      }
+
+      /*
+       * IMP-234 — Mode-coloured clicker dice.
+       * Every tagged die keeps a muted semantic treatment. The active die uses
+       * the exact colour, surface, and border tokens of its active mode button.
+       * Labels and accessible names preserve meaning without relying on colour.
+       */
+      .die[data-mode="advantage"][data-count]:not([data-count="0"]) {
+        color: var(--green);
+        background: var(--green-muted);
+        border-color: var(--green-muted-border);
+      }
+
+      .die[data-mode="disadvantage"][data-count]:not([data-count="0"]) {
+        color: var(--red);
+        background: var(--red-muted);
+        border-color: var(--red-muted-border);
+      }
+
+      .die[data-mode="advantage"][data-count]:not([data-count="0"]) .die-icon,
+      .die[data-mode="disadvantage"][data-count]:not([data-count="0"])
+        .die-icon {
+        color: currentColor;
+      }
+
+      .die[data-mode="advantage"][data-count][aria-pressed="true"] {
+        color: var(--green);
+        background: var(--green-soft);
+        border-color: var(--green);
+      }
+
+      .die[data-mode="disadvantage"][data-count][aria-pressed="true"] {
+        color: var(--red);
+        background: var(--red-soft);
+        border-color: var(--red);
+      }
+
+      .die[data-mode="advantage"][data-count][aria-pressed="true"] .die-count {
+        color: var(--canvas);
+        background: var(--green);
+        border-color: var(--green);
+      }
+
+      .die[data-mode="disadvantage"][data-count][aria-pressed="true"]
+        .die-count {
+        color: var(--canvas);
+        background: var(--red);
+        border-color: var(--red);
+      }
+
+      .mode[aria-pressed="true"] {
+        color: var(--text);
+        background: var(--canvas);
+        border-color: var(--border);
+        box-shadow: var(--control-shadow);
+      }
+
+      .mode[aria-pressed="true"]::before {
+        content: "✓ ";
+      }
+
+      /*
+       * IMP-218 — Semantic Advantage and Disadvantage presentation.
+       * Pair colour with the existing labels, checkmark, and retained text so
+       * mode remains understandable without relying on colour alone.
+       */
+      .mode[data-mode="advantage"][aria-pressed="true"] {
+        color: var(--green);
+        background: var(--green-soft);
+        border-color: var(--green);
+      }
+
+      .mode[data-mode="disadvantage"][aria-pressed="true"] {
+        color: var(--red);
+        background: var(--red-soft);
+        border-color: var(--red);
+      }
+
+      .roll-value.retained-advantage,
+      .retained-note.retained-advantage {
+        color: var(--green);
+      }
+
+      .roll-value.retained-advantage .roll-die-face {
+        fill: var(--green-soft);
+        stroke: var(--green);
+      }
+
+      .roll-value.retained-disadvantage,
+      .retained-note.retained-disadvantage {
+        color: var(--red);
+      }
+
+      .roll-value.retained-disadvantage .roll-die-face {
+        fill: var(--red-soft);
+        stroke: var(--red);
+      }
+
+      button:hover:not(:disabled) {
+        filter: brightness(0.96);
+      }
+
+      button:active:not(:disabled) {
+        filter: brightness(0.9);
+      }
+
+      button:disabled,
+      .quantity:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .quantity:disabled {
+        color: var(--muted);
+        background: var(--surface-2);
+      }
+
+      .quantity:hover:not(:disabled) {
+        border-color: var(--muted);
+      }
+
+      .modifier-input:hover {
+        border-color: var(--muted);
+      }
+
+      /* IMP-253 — Show the Formula modifier target without moving its caret. */
+      .group-modifier-row .modifier-input[data-formula-caret-active="true"] {
+        background: var(--blue-soft);
+        border-color: var(--blue);
+        box-shadow: var(--focus);
+      }
+
+      .quantity:invalid:not(:disabled) {
+        background: var(--red-soft);
+        border-color: var(--red);
+      }
+
+      .modifier-input[aria-invalid="true"] {
+        background: var(--red-soft);
+        border-color: var(--red);
+      }
+
+      /* ==========================================================================
+         8. Responsive overrides
+         ========================================================================== */
+      /* Keep the closed visual treatment in the artifact gutter at tablet widths. */
+      @media (min-width: 601px) and (max-width: 1183px) {
+        .header {
+          padding-left: var(--space-8);
+        }
+
+        .settings-trigger:not([aria-expanded="true"])::before,
+        .settings-trigger:not([aria-expanded="true"]) svg {
+          transform: translateX(-14px);
+        }
+      }
+
+      @media (max-width: 600px) {
+        .app {
+          padding: var(--space-3) var(--space-4);
+        }
+
+        .header {
+          padding-left: 56px;
+        }
+
+        .main {
+          padding: var(--space-2) 0;
+        }
+
+        /* Keep the open rail clear of the first die row at narrow widths. */
+        body.rail-open .main {
+          padding-top: 40px;
+          padding-left: 40px;
+        }
+
+        .control-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .active-group-strip {
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: var(--space-2);
+        }
+
+        .workspace-note {
+          max-width: 120px;
+        }
+
+        .result-card {
+          margin-top: var(--space-3);
+        }
+
+        .footer {
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .roller-panel {
+          padding: var(--space-2);
+        }
+
+        .workspace-heading {
+          align-items: start;
+        }
+
+        .picker {
+          grid-template-columns: repeat(4, minmax(44px, 1fr));
+          gap: 4px;
+        }
+
+        .die {
+          min-height: 72px;
+        }
+
+        .result-card {
+          gap: var(--space-2);
+          padding: var(--space-2);
+        }
+
+        .formula-input-row {
+          grid-template-columns: minmax(0, 1fr) auto auto;
+          gap: 6px;
+        }
+
+        .formula-roll,
+        .clear-pool {
+          padding: 0 8px;
+          font-size: 14px;
+        }
+
+        .result-body {
+          gap: var(--space-2) var(--space-3);
+        }
+
+        .result-body:has(.formula-results) {
+          grid-template-columns: 1fr;
+        }
+
+        .result-body:has(.formula-results) .total {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          min-width: 0;
+          padding: var(--space-2) 0 0;
+          text-align: left;
+          border-top: 1px solid var(--border);
+          border-left: 0;
+        }
+
+        .result-body:has(.formula-results) .total span {
+          display: inline;
+        }
+
+        .total {
+          min-width: 78px;
+          padding-left: var(--space-3);
+        }
+      }
+
+      @media (max-width: 400px) {
+        .active-group-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .mode-controls {
+          justify-self: start;
+        }
+      }
+
+      @media (max-width: 360px) {
+        .active-group-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .mode-controls {
+          justify-self: start;
+        }
+
+        .picker {
+          grid-template-columns: repeat(3, minmax(44px, 1fr));
+        }
+
+        .workspace-note {
+          display: none;
+        }
+      }
+
+      /* ==========================================================================
+         9. Accessibility and reduced-motion overrides
+         ========================================================================== */
+      button:focus-visible,
+      .quantity:focus-visible,
+      .modifier-input:focus-visible,
+      .formula-input:focus-visible {
+        outline: none;
+        border-color: var(--blue);
+        box-shadow: var(--focus);
+      }
+
+      .sr-only {
+        position: absolute;
+        overflow: hidden;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        white-space: nowrap;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Region: hamburger-controlled preference rail. -->
+    <button
+      class="settings-trigger"
+      id="settingsTrigger"
+      type="button"
+      aria-label="Abrir controles"
+      aria-expanded="false"
+      aria-controls="settingsFlyout"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
+    </button>
+    <div
+      class="settings-flyout"
+      id="settingsFlyout"
+      role="group"
+      aria-label="Controles de exibição"
+      hidden
+    >
+      <div class="settings-rail">
+        <button
+          class="settings-soon"
+          id="rollAnimationSoon"
+          type="button"
+          aria-disabled="true"
+          aria-label="Animação de rolagem, em breve"
+          aria-describedby="rollAnimationSoonTip"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <rect x="5" y="5" width="14" height="14" rx="3" transform="rotate(12 12 12)" />
+            <path d="M9.5 9.5h.01M14.5 14.5h.01M12 12h.01" />
+          </svg>
+          <span class="soon-tooltip" id="rollAnimationSoonTip" role="tooltip">Em breve</span>
+        </button>
+        <button
+          class="settings-soon"
+          id="soundSoon"
+          type="button"
+          aria-disabled="true"
+          aria-label="Som, em breve"
+          aria-describedby="soundSoonTip"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M4 10v4h3.5l4.5 3.5v-11L7.5 10H4Z" />
+            <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7.5a7 7 0 0 1 0 9" />
+          </svg>
+          <span class="soon-tooltip" id="soundSoonTip" role="tooltip">Em breve</span>
+        </button>
+        <button
+          class="theme-switch"
+          id="themeToggle"
+          type="button"
+          role="switch"
+          aria-label="Tema claro"
+          aria-checked="false"
+          title="Mudar para o tema claro"
+        >
+          <svg
+            class="theme-icon theme-icon--moon"
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"
+            /></svg
+          ><svg
+            class="theme-icon theme-icon--sun"
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="3.5" />
+            <path
+              d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- Region: application shell. -->
+    <div class="app" data-shell-profile="standard">
+      <!-- Region: title; selection is shown directly on the dice tiles. -->
+      <header class="header app-header">
+        <div>
+          <h1 class="sr-only">Rolador de Dados</h1>
+        </div>
+        <span class="sr-only" id="activeBadge">Pool vazio</span>
+      </header>
+      <!-- Region: roll controls and results. -->
+      <main class="main app-main">
+        <section class="card roller-panel" aria-labelledby="chooseHeading">
+          <h2 class="sr-only" id="chooseHeading">Pool de dados</h2>
+          <div
+            class="picker"
+            role="group"
+            aria-label="Pool de dados: clique para adicionar, clique com o botão direito para diminuir ou remover"
+            title="Clique para adicionar um dado; clique com o botão direito para diminuir ou remover"
+          >
+            <button
+              class="die"
+              data-sides="4"
+              aria-label="Adicionar d4 ao pool"
+              aria-pressed="false"
+            >
+              <span class="die-count" aria-hidden="true">0</span>
+              <svg class="die-icon" aria-hidden="true" viewBox="0 0 32 32">
+                <path class="die-face" d="M16 4 29 27H3Z" />
+                <text x="16" y="22">4</text>
+              </svg>
+              <span class="die-label">d4</span></button
+            ><button
+              class="die"
+              data-sides="6"
+              aria-label="Adicionar d6 ao pool"
+              aria-pressed="false"
+            >
+              <span class="die-count" aria-hidden="true">0</span>
+              <svg class="die-icon" aria-hidden="true" viewBox="0 0 32 32">
+                <path class="die-face" d="M5 5h22v22H5Z" />
+                <text x="16" y="19.5">6</text>
+              </svg>
+              <span class="die-label">d6</span></button
+            ><button
+              class="die"
+              data-sides="8"
+              aria-label="Adicionar d8 ao pool"
+              aria-pressed="false"
+            >
+              <span class="die-count" aria-hidden="true">0</span>
+              <svg class="die-icon" aria-hidden="true" viewBox="0 0 32 32">
+                <path class="die-face" d="M16 3 29 16 16 29 3 16Z" />
+                <text x="16" y="19.5">8</text>
+              </svg>
+              <span class="die-label">d8</span></button
+            ><button
+              class="die"
+              data-sides="10"
+              aria-label="Adicionar d10 ao pool"
+              aria-pressed="false"
+            >
+              <span class="die-count" aria-hidden="true">0</span>
+              <svg class="die-icon" aria-hidden="true" viewBox="0 0 32 32">
+                <path class="die-face" d="M16 3 29 16 16 29 3 16Z" />
+                <text x="16" y="19.5">10</text>
+              </svg>
+              <span class="die-label">d10</span></button
+            ><button
+              class="die"
+              data-sides="12"
+              aria-label="Adicionar d12 ao pool"
+              aria-pressed="false"
+            >
+              <span class="die-count" aria-hidden="true">0</span>
+              <svg class="die-icon" aria-hidden="true" viewBox="0 0 32 32">
+                <path class="die-face" d="M16 3 29 12 24 28H8L3 12Z" />
+                <text x="16" y="20">12</text>
+              </svg>
+              <span class="die-label">d12</span></button
+            ><button
+              class="die"
+              data-sides="20"
+              aria-label="Adicionar d20 ao pool"
+              aria-pressed="false"
+            >
+              <span class="die-count" aria-hidden="true">0</span>
+              <svg class="die-icon" aria-hidden="true" viewBox="0 0 32 32">
+                <path class="die-face" d="M9 3h14l7 13-7 13H9L2 16Z" />
+                <text x="16" y="19.5">20</text>
+              </svg>
+              <span class="die-label">d20</span></button
+            ><button
+              class="die"
+              data-sides="100"
+              aria-label="Adicionar d100 ao pool"
+              aria-pressed="false"
+            >
+              <span class="die-count" aria-hidden="true">0</span>
+              <svg class="die-icon" aria-hidden="true" viewBox="0 0 32 32">
+                <circle class="die-face" cx="16" cy="16" r="13" />
+                <text x="16" y="19.5">%</text>
+              </svg>
+              <span class="die-label">d100</span>
+            </button>
+          </div>
+          <div
+            class="active-group-strip"
+            id="poolBar"
+            aria-label="Controles do grupo de dados selecionado"
+            hidden
+          >
+            <div class="group-modifier-row">
+              <div class="modifier-copy">
+                <label for="groupModifier">Modificador</label>
+                <p class="sr-only" id="groupModifierHint">
+                  Apenas o dado selecionado · vazio vale 0
+                </p>
+                <p
+                  class="field-error"
+                  id="groupModifierError"
+                  role="alert"
+                  hidden
+                >
+                  Use um número inteiro, como 2 ou −1.
+                </p>
+              </div>
+              <input
+                class="modifier-input"
+                id="groupModifier"
+                type="text"
+                value=""
+                placeholder="0"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                aria-invalid="false"
+                aria-label="Modificador do grupo de dados selecionado"
+                title="Modificador apenas para o grupo de dados selecionado"
+                aria-describedby="groupModifierHint groupModifierError"
+                disabled
+              />
+            </div>
+            <div class="mode-row">
+              <div class="sr-only">
+                <b id="modeLabel">Vantagem ou Desvantagem do dado selecionado</b>
+                <p id="modeHint">
+                  Nenhum selecionado significa Normal. O modo acompanha o dado selecionado.
+                </p>
+              </div>
+              <div
+                class="mode-controls"
+                role="group"
+                aria-labelledby="modeLabel"
+                aria-describedby="modeHint"
+              >
+                <button
+                  class="mode"
+                  data-mode="advantage"
+                  aria-label="Vantagem"
+                  title="Vantagem para o dado selecionado; selecione novamente para voltar ao Normal"
+                  aria-pressed="false"
+                >
+                  VANT</button
+                ><button
+                  class="mode"
+                  data-mode="disadvantage"
+                  aria-label="Desvantagem"
+                  title="Desvantagem para o dado selecionado; selecione novamente para voltar ao Normal"
+                  aria-pressed="false"
+                >
+                  DESV
+                </button>
+              </div>
+            </div>
+          </div>
+          <form class="formula-panel" id="formulaForm" novalidate>
+            <div class="formula-toolbar">
+              <div class="formula-copy">
+                <label class="sr-only" for="formula">Fórmula</label>
+                <p class="sr-only" id="formulaHint">
+                  Dados padrão unidos por + · modo a/d opcional e modificador
+                  com sinal por grupo
+                </p>
+              </div>
+            </div>
+            <div class="formula-input-row">
+              <div class="formula-field">
+                <input
+                  class="formula-input"
+                  id="formula"
+                  type="text"
+                  value=""
+                  placeholder="2d6 + 1d8 + 5"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  aria-invalid="false"
+                  aria-describedby="formulaHint formulaError"
+                />
+                <p class="field-error" id="formulaError" role="alert" hidden>
+                  Use dados padrão unidos por +, com um modificador com sinal
+                  opcional após cada grupo.
+                </p>
+              </div>
+              <button
+                class="formula-roll"
+                id="formulaRollButton"
+                type="button"
+                aria-label="Rolar fórmula"
+              >
+                Rolar
+              </button>
+              <button
+                class="clear-pool"
+                id="clearPool"
+                type="button"
+                title="Limpar todos os dados, modificadores e o último resultado"
+              >
+                Limpar dados
+              </button>
+            </div>
+          </form>
+          <section class="result-card" aria-labelledby="resultKicker">
+            <div class="result-card-header">
+              <div>
+                <p class="result-kicker" id="resultKicker">Último resultado</p>
+                <p class="result-label" id="resultHeading">
+                  Nenhuma rolagem ainda · seleção: 1d20
+                </p>
+              </div>
+            </div>
+            <div class="result-body">
+              <div
+                id="results"
+                class="empty-result"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                Role para ver o resultado
+              </div>
+              <div class="total" id="total" hidden>
+                <span id="totalLabel">Total</span><b id="totalValue">0</b>
+              </div>
+              <p class="retained-note" id="retainedNote" hidden></p>
+              <p
+                class="modifier-breakdown sr-only"
+                id="modifierBreakdown"
+                hidden
+              ></p>
+            </div>
+          </section>
+        </section>
+      </main>
+      <!-- Region: live status and offline contract. -->
+      <footer class="sr-only app-footer">
+        <span id="status" role="status">Pronto para rolar.</span
+        ><span>Offline · aleatoriedade segura</span>
+      </footer>
+    </div>
+    <script>
+      (() => {
+        // State constraints.
+        // IMP-217 — d100 shares the existing selection and secure-roll paths.
+        const allowed = [4, 6, 8, 10, 12, 20, 100],
+          maxQuantity = 100;
+        // DOM references.
+        const buttons = [...document.querySelectorAll(".die")],
+          modeButtons = [...document.querySelectorAll(".mode")];
+        const settingsTrigger = document.querySelector("#settingsTrigger"),
+          settingsFlyout = document.querySelector("#settingsFlyout"),
+          firstSettingsControl = document.querySelector("#rollAnimationSoon"),
+          themeToggle = document.querySelector("#themeToggle");
+        const results = document.querySelector("#results"),
+          resultHeading = document.querySelector("#resultHeading"),
+          total = document.querySelector("#total"),
+          totalValue = document.querySelector("#totalValue"),
+          totalLabel = document.querySelector("#totalLabel"),
+          retainedNote = document.querySelector("#retainedNote"),
+          modifierBreakdown = document.querySelector("#modifierBreakdown"),
+          badge = document.querySelector("#activeBadge"),
+          status = document.querySelector("#status"),
+          poolBar = document.querySelector("#poolBar"),
+          clearPoolButton = document.querySelector("#clearPool"),
+          groupModifierInput = document.querySelector("#groupModifier"),
+          groupModifierError = document.querySelector("#groupModifierError"),
+          formulaForm = document.querySelector("#formulaForm"),
+          formulaInput = document.querySelector("#formula"),
+          formulaRollButton = document.querySelector("#formulaRollButton"),
+          formulaError = document.querySelector("#formulaError");
+        // Stored preferences and current state.
+        const themeKey = "dice-roller.theme",
+          savedTheme = localStorage.getItem(themeKey),
+          savedDie = Number(localStorage.getItem("dice-roller.selected-die")),
+          savedMode = localStorage.getItem("dice-roller.mode"),
+          poolKey = "dice-roller.pool",
+          formulaKey = "dice-roller.formula";
+        let savedPool = {};
+        try {
+          const candidate = JSON.parse(localStorage.getItem(poolKey) || "{}");
+          if (candidate && typeof candidate === "object") savedPool = candidate;
+        } catch {}
+        const pool = Object.fromEntries(
+          allowed.map((die) => [die, Number.isInteger(savedPool[die]) && savedPool[die] > 0 ? Math.min(maxQuantity, savedPool[die]) : 0]),
+        );
+        let sides = allowed.includes(savedDie) && pool[savedDie] > 0
+            ? savedDie
+            : allowed.find((die) => pool[die] > 0) || null,
+          mode = ["normal", "advantage", "disadvantage"].includes(savedMode)
+            ? savedMode
+            : "normal",
+          formulaGroups = poolEntries().map((group) => ({
+            ...group,
+            mode: null,
+            modifierValue: 0,
+          })),
+          activeGroupIndex = formulaGroups.findIndex((group) => group.sides === sides);
+        if (activeGroupIndex < 0 && formulaGroups.length) {
+          activeGroupIndex = formulaGroups.length - 1;
+        }
+        if (activeGroupIndex >= 0 && mode !== "normal") {
+          formulaGroups[activeGroupIndex].mode = mode;
+        }
+        // Helpers and UI transitions.
+        /*
+         * IMP-227 — Formula and clicker use one canonical shared state.
+         * Programmatic field updates do not fire input events, which keeps the
+         * two directions synchronized without loops or duplicate terms.
+         */
+        function poolEntries() {
+          return allowed.filter((die) => pool[die] > 0).map((die) => ({ sides: die, quantity: pool[die] }));
+        }
+        function poolCount() {
+          return poolEntries().reduce((sum, group) => sum + group.quantity, 0);
+        }
+        function notation() {
+          const entries = poolEntries();
+          return entries.length ? entries.map((group) => group.quantity + "d" + group.sides).join(" + ") : "pool vazio";
+        }
+        // Valores internos continuam em inglês; estes são só os nomes exibidos.
+        const modeNames = {
+          normal: "normal",
+          advantage: "vantagem",
+          disadvantage: "desvantagem",
+        };
+        function modeName(value) {
+          return modeNames[value] || value;
+        }
+        function modeTitle() {
+          const name = modeName(mode);
+          return name[0].toUpperCase() + name.slice(1);
+        }
+        function formatSigned(value) {
+          if (value > 0) return "+" + value;
+          if (value < 0) return "−" + Math.abs(value);
+          return "0";
+        }
+        function parseGroupModifier() {
+          const raw = groupModifierInput.value.trim();
+          if (raw === "")
+            return { valid: true, value: 0, showBreakdown: false };
+          if (!/^[+-]?\d+$/.test(raw))
+            return { valid: false, value: 0, showBreakdown: false };
+          const value = Number(raw);
+          return {
+            valid: Number.isSafeInteger(value),
+            value,
+            showBreakdown: value !== 0,
+          };
+        }
+        function setGroupModifierValidation(valid) {
+          groupModifierInput.setAttribute("aria-invalid", String(!valid));
+          groupModifierError.hidden = valid;
+        }
+        let formulaModifierCaretActive = false;
+        function setFormulaModifierHighlight(active) {
+          formulaModifierCaretActive = active;
+          groupModifierInput.setAttribute(
+            "data-formula-caret-active",
+            String(active),
+          );
+        }
+        /*
+         * IMP-248 — A plus followed by a valid dice token starts the next
+         * group, even when that token has an explicit quantity. Otherwise a
+         * signed integer immediately after a group remains that group's
+         * modifier, preserving the IMP-243 syntax.
+         */
+        function startsNextDiceGroup(compact, cursor) {
+          return /^\+(?:\d*)d(?:100|20|12|10|8|6|4)(?:[ad]?)/.test(
+            compact.slice(cursor),
+          );
+        }
+        function parseFormula(rawValue = formulaInput.value) {
+          const compact = rawValue.replace(/\s+/g, "").toLowerCase();
+          if (compact === "") {
+            return {
+              valid: false,
+              message: "Insira uma fórmula, como 1d20 + 1d4.",
+            };
+          }
+          const groups = [];
+          let totalDice = 0;
+          let cursor = 0;
+          while (cursor < compact.length) {
+            const groupMatch = compact
+              .slice(cursor)
+              .match(/^(\d*)d(100|20|12|10|8|6|4)([ad]?)/);
+            if (!groupMatch) {
+              return {
+                valid: false,
+                message:
+                  "Use dados padrão unidos por +, com um número inteiro com sinal opcional após cada grupo.",
+              };
+            }
+            cursor += groupMatch[0].length;
+            const declaredQuantity =
+              groupMatch[1] === "" ? 1 : Number(groupMatch[1]);
+            const groupSides = Number(groupMatch[2]);
+            const groupMode =
+              groupMatch[3] === "a"
+                ? "advantage"
+                : groupMatch[3] === "d"
+                  ? "disadvantage"
+                  : null;
+            const groupQuantity =
+              groupMode && declaredQuantity === 1 ? 2 : declaredQuantity;
+            if (
+              !Number.isSafeInteger(declaredQuantity) ||
+              declaredQuantity < 1 ||
+              declaredQuantity > maxQuantity ||
+              groupQuantity > maxQuantity
+            ) {
+              return {
+                valid: false,
+                message: "Use de 1 a 100 dados em cada grupo da fórmula.",
+              };
+            }
+            totalDice += groupQuantity;
+            if (totalDice > maxQuantity) {
+              return {
+                valid: false,
+                message: "Use no máximo 100 dados em toda a fórmula.",
+              };
+            }
+            let modifierValue = 0;
+            const modifierMatch = startsNextDiceGroup(compact, cursor)
+              ? null
+              : compact.slice(cursor).match(/^([+-]\d+)/);
+            if (modifierMatch) {
+              modifierValue = Number(modifierMatch[1]);
+              if (!Number.isSafeInteger(modifierValue)) {
+                return {
+                  valid: false,
+                  message: "Use um número inteiro não muito grande no modificador de cada grupo.",
+                };
+              }
+              cursor += modifierMatch[1].length;
+            }
+            groups.push({
+              quantity: groupQuantity,
+              sides: groupSides,
+              mode: groupMode,
+              modifierValue,
+              label:
+                groupQuantity +
+                "d" +
+                groupSides +
+                (groupMode === "advantage"
+                  ? "a"
+                  : groupMode === "disadvantage"
+                    ? "d"
+                    : ""),
+            });
+            if (cursor === compact.length) break;
+            if (compact[cursor] !== "+") {
+              return {
+                valid: false,
+                message: "Una os grupos de dados com +.",
+              };
+            }
+            cursor += 1;
+          }
+          const display = groups
+            .map(
+              (group) =>
+                group.label +
+                (group.modifierValue
+                  ? " " + formatFormulaModifier(group.modifierValue)
+                  : ""),
+            )
+            .join(" + ");
+          return {
+            valid: true,
+            groups,
+            display,
+          };
+        }
+        /*
+         * IMP-237 — Incomplete dice groups are removed from the clicker while
+         * the user's draft Formula stays untouched. Only the narrow, expected
+         * editing state (an empty Formula or a group ending in "d") is handled;
+         * unrelated malformed input keeps the last valid clicker state.
+         */
+        function parseIncompleteFormulaDraft(rawValue = formulaInput.value) {
+          const compact = rawValue.replace(/\s+/g, "").toLowerCase();
+          if (compact === "") {
+            return {
+              recognized: true,
+              groups: [],
+            };
+          }
+          const groups = [];
+          let totalDice = 0;
+          let foundIncompleteGroup = false;
+          let cursor = 0;
+          while (cursor < compact.length) {
+            const remaining = compact.slice(cursor);
+            const completeMatch = remaining.match(
+              /^(\d*)d(100|20|12|10|8|6|4)([ad]?)/,
+            );
+            const incompleteMatch = remaining.match(/^(\d*)d(?=$|\+)/);
+            if (!completeMatch && !incompleteMatch) {
+              return { recognized: false };
+            }
+            const quantityText = (completeMatch || incompleteMatch)[1];
+            const declaredQuantity =
+              quantityText === "" ? 1 : Number(quantityText);
+            if (
+              !Number.isSafeInteger(declaredQuantity) ||
+              declaredQuantity < 1 ||
+              declaredQuantity > maxQuantity
+            ) {
+              return { recognized: false };
+            }
+            if (incompleteMatch) {
+              foundIncompleteGroup = true;
+              cursor += incompleteMatch[0].length;
+            } else {
+              cursor += completeMatch[0].length;
+              const groupSides = Number(completeMatch[2]);
+              const groupMode =
+                completeMatch[3] === "a"
+                  ? "advantage"
+                  : completeMatch[3] === "d"
+                    ? "disadvantage"
+                    : null;
+              const groupQuantity =
+                groupMode && declaredQuantity === 1 ? 2 : declaredQuantity;
+              totalDice += groupQuantity;
+              if (groupQuantity > maxQuantity || totalDice > maxQuantity) {
+                return { recognized: false };
+              }
+              let modifierValue = 0;
+              const modifierMatch = startsNextDiceGroup(compact, cursor)
+                ? null
+                : compact.slice(cursor).match(/^([+-]\d+)/);
+              if (modifierMatch) {
+                modifierValue = Number(modifierMatch[1]);
+                if (!Number.isSafeInteger(modifierValue)) {
+                  return { recognized: false };
+                }
+                cursor += modifierMatch[1].length;
+              }
+              groups.push({
+                quantity: groupQuantity,
+                sides: groupSides,
+                mode: groupMode,
+                modifierValue,
+              });
+            }
+            if (cursor === compact.length) break;
+            if (compact[cursor] !== "+") return { recognized: false };
+            cursor += 1;
+            if (cursor === compact.length) return { recognized: false };
+          }
+
+          if (!foundIncompleteGroup) return { recognized: false };
+          return {
+            recognized: true,
+            groups,
+          };
+        }
+        function setFormulaValidation(valid, message = "") {
+          formulaInput.setAttribute("aria-invalid", String(!valid));
+          formulaError.hidden = valid;
+          if (!valid) formulaError.textContent = message;
+        }
+        function formatFormulaModifier(value) {
+          return value >= 0 ? "+" + value : String(value);
+        }
+        function serializeParsedFormula(formula) {
+          return formula.groups
+            .map(
+              (group) =>
+                group.label +
+                (group.modifierValue
+                  ? " " + formatFormulaModifier(group.modifierValue)
+                  : ""),
+            )
+            .join(" + ");
+        }
+        function serializeClickerToFormula() {
+          if (!formulaGroups.length) return "";
+          return formulaGroups
+            .map((group) => {
+              const suffix =
+                group.mode === "advantage"
+                  ? "a"
+                  : group.mode === "disadvantage"
+                    ? "d"
+                    : "";
+              return (
+                group.quantity +
+                "d" +
+                group.sides +
+                suffix +
+                (group.modifierValue
+                  ? " " + formatFormulaModifier(group.modifierValue)
+                  : "")
+              );
+            })
+            .join(" + ");
+        }
+        function persistSharedFormula(value) {
+          if (value) localStorage.setItem(formulaKey, value);
+          else localStorage.removeItem(formulaKey);
+        }
+        function syncFormulaFromClicker({ announce = false } = {}) {
+          const serialized = serializeClickerToFormula();
+          if (serialized === null) return false;
+          formulaInput.value = serialized;
+          setFormulaValidation(true);
+          persistSharedFormula(serialized);
+          if (announce && serialized)
+            status.textContent = "Fórmula atualizada para " + serialized + ".";
+          return true;
+        }
+        function applyFormulaToClicker(
+          formula,
+          { persist = true, keepActive = false } = {},
+        ) {
+          const previousActiveIndex = activeGroupIndex;
+          formulaGroups = formula.groups.map((group) => ({
+            quantity: group.quantity,
+            sides: group.sides,
+            mode: group.mode,
+            modifierValue: group.modifierValue || 0,
+          }));
+          allowed.forEach((die) => (pool[die] = 0));
+          formulaGroups.forEach((group) => {
+            pool[group.sides] = Math.min(
+              maxQuantity,
+              pool[group.sides] + group.quantity,
+            );
+          });
+          activeGroupIndex =
+            keepActive &&
+            previousActiveIndex >= 0 &&
+            previousActiveIndex < formulaGroups.length
+              ? previousActiveIndex
+              : formulaGroups.length - 1;
+          const activeGroup = formulaGroups[activeGroupIndex];
+          sides = activeGroup.sides;
+          mode = activeGroup.mode || "normal";
+          persistPool();
+          localStorage.setItem("dice-roller.selected-die", String(sides));
+          localStorage.setItem("dice-roller.mode", mode);
+          if (persist) persistSharedFormula(formulaInput.value);
+          refreshControls();
+        }
+        function applyIncompleteFormulaDraftToClicker(draft) {
+          formulaGroups = draft.groups.map((group) => ({ ...group }));
+          allowed.forEach((die) => (pool[die] = 0));
+          formulaGroups.forEach((group) => {
+            pool[group.sides] = Math.min(
+              maxQuantity,
+              pool[group.sides] + group.quantity,
+            );
+          });
+
+          activeGroupIndex = formulaGroups.length - 1;
+          const activeGroup = formulaGroups[activeGroupIndex];
+          sides = activeGroup?.sides || null;
+          mode = activeGroup?.mode || "normal";
+          persistPool();
+          if (sides) {
+            localStorage.setItem("dice-roller.selected-die", String(sides));
+          } else {
+            localStorage.removeItem("dice-roller.selected-die");
+          }
+          localStorage.setItem("dice-roller.mode", mode);
+          persistSharedFormula(formulaInput.value);
+          refreshControls();
+        }
+        /*
+         * IMP-218 — Retained-result mode styling.
+         * The semantic class follows the roll's own mode, including Formula
+         * groups, without changing selection or retained-value calculations.
+         */
+        function createRollValue(
+          value,
+          dieSides,
+          retained = false,
+          retainedMode = null,
+        ) {
+          const shapePaths = {
+            4: "M16 4 29 27H3Z",
+            6: "M5 5h22v22H5Z",
+            8: "M16 3 29 16 16 29 3 16Z",
+            10: "M16 3 29 16 16 29 3 16Z",
+            12: "M16 3 29 12 24 28H8L3 12Z",
+            20: "M9 3h14l7 13-7 13H9L2 16Z",
+          };
+          const item = document.createElement("span");
+          const semanticClass =
+            retained && ["advantage", "disadvantage"].includes(retainedMode)
+              ? " retained-" + retainedMode
+              : "";
+          item.className = "roll-value" + semanticClass;
+          item.dataset.sides = String(dieSides);
+          item.setAttribute(
+            "aria-label",
+            "d" +
+              dieSides +
+              " resultado " +
+              value +
+              (retained ? ", mantido pela " + modeName(retainedMode) : ""),
+          );
+
+          const svg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg",
+          );
+          svg.setAttribute("class", "roll-die-icon");
+          svg.setAttribute("viewBox", "0 0 32 32");
+          svg.setAttribute("aria-hidden", "true");
+          let face;
+          if (dieSides === 100) {
+            face = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "circle",
+            );
+            face.setAttribute("cx", "16");
+            face.setAttribute("cy", "16");
+            face.setAttribute("r", "13");
+          } else {
+            face = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "path",
+            );
+            face.setAttribute("d", shapePaths[dieSides]);
+          }
+          face.setAttribute("class", "roll-die-face");
+
+          const label = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text",
+          );
+          label.setAttribute("x", "16");
+          label.setAttribute("y", dieSides === 4 ? "21.5" : "19.5");
+          label.textContent = String(value);
+          svg.append(face, label);
+          item.append(svg);
+          return item;
+        }
+        function renderTotal(baseLabel, baseValue, modifier) {
+          const finalTotal = baseValue + modifier.value;
+          total.hidden = false;
+          totalValue.textContent = String(finalTotal);
+          if (modifier.showBreakdown) {
+            totalLabel.textContent = "Total final";
+            modifierBreakdown.hidden = false;
+            modifierBreakdown.textContent =
+              baseLabel +
+              " " +
+              baseValue +
+              " + modificador " +
+              formatSigned(modifier.value) +
+              " = " +
+              finalTotal;
+          } else {
+            totalLabel.textContent =
+              baseLabel === "Mantido" ? "Resultado mantido" : "Total";
+            modifierBreakdown.hidden = true;
+            modifierBreakdown.textContent = "";
+          }
+          return finalTotal;
+        }
+        function clearRoll() {
+          results.className = "empty-result";
+          results.textContent = "Role para ver o resultado";
+          total.hidden = true;
+          totalValue.textContent = "0";
+          retainedNote.hidden = true;
+          retainedNote.className = "retained-note";
+          retainedNote.textContent = "";
+          modifierBreakdown.hidden = true;
+          modifierBreakdown.textContent = "";
+          resultHeading.textContent =
+            poolEntries().length ? "Nenhuma rolagem ainda · seleção: " + notation() : "Nenhuma rolagem ainda · escolha os dados";
+        }
+        /*
+         * IMP-203 — Persisted theme state.
+         * Only explicit choices are stored; absent or invalid values resolve to
+         * the approved dark default.
+         */
+        function applyTheme(value, { persist = false, announce = false } = {}) {
+          const theme = value === "light" ? "light" : "dark",
+            lightTheme = theme === "light";
+          document.documentElement.dataset.theme = theme;
+          themeToggle.setAttribute("aria-checked", String(lightTheme));
+          themeToggle.title =
+            "Mudar para o tema " + (lightTheme ? "escuro" : "claro");
+          if (persist) localStorage.setItem(themeKey, theme);
+          if (announce)
+            status.textContent =
+              "Tema " + (lightTheme ? "claro" : "escuro") + " aplicado.";
+        }
+        /*
+         * IMP-255 — Rail focus contract.
+         * Opening starts at the first rail action; leaving either end with Tab
+         * closes the rail and returns focus to the hamburger.
+         */
+        function closeSettings() {
+          if (settingsFlyout.hidden) return;
+          settingsFlyout.hidden = true;
+          document.body.classList.remove("rail-open");
+          settingsTrigger.setAttribute("aria-expanded", "false");
+          settingsTrigger.setAttribute("aria-label", "Abrir controles");
+          settingsTrigger.focus();
+        }
+        function openSettings() {
+          if (!settingsFlyout.hidden) {
+            closeSettings();
+            return;
+          }
+          settingsFlyout.hidden = false;
+          document.body.classList.add("rail-open");
+          settingsTrigger.setAttribute("aria-expanded", "true");
+          settingsTrigger.setAttribute("aria-label", "Fechar controles");
+          firstSettingsControl.focus();
+        }
+        function persistPool() {
+          localStorage.setItem(poolKey, JSON.stringify(pool));
+        }
+        function refreshControls() {
+          const entries = poolEntries();
+          const activeGroup = formulaGroups[activeGroupIndex];
+          buttons.forEach((button) => {
+            const die = Number(button.dataset.sides);
+            const count = pool[die];
+            const dieGroup = formulaGroups.find((group) => group.sides === die);
+            const dieMode = dieGroup?.mode || "normal";
+            button.dataset.count = String(count);
+            button.dataset.mode = dieMode;
+            button.setAttribute("aria-pressed", String(die === sides && count > 0));
+            button.setAttribute(
+              "aria-label",
+              count
+                ? "Adicionar outro d" +
+                    die +
+                    ", atualmente " +
+                    count +
+                    ", " +
+                    modeName(dieMode)
+                : "Adicionar d" + die + " ao pool",
+            );
+            button.querySelector(".die-count").textContent = String(count);
+          });
+          modeButtons.forEach((button) => {
+            button.setAttribute(
+              "aria-pressed",
+              String(button.dataset.mode === mode),
+            );
+            button.disabled = !activeGroup;
+          });
+          groupModifierInput.disabled = !activeGroup;
+          groupModifierInput.setAttribute(
+            "data-formula-caret-active",
+            String(formulaModifierCaretActive && Boolean(activeGroup)),
+          );
+          groupModifierInput.value =
+            activeGroup && activeGroup.modifierValue
+              ? formatFormulaModifier(activeGroup.modifierValue)
+              : "";
+          setGroupModifierValidation(true);
+          poolBar.hidden = entries.length === 0;
+          badge.textContent = sides
+            ? "Ativo · d" + sides
+            : entries.length
+              ? "Nenhum grupo de dados selecionado"
+              : "Pool vazio";
+          clearPoolButton.disabled = entries.length === 0;
+        }
+        /*
+         * IMP-242 — The Formula caret drives the clicker selection.
+         * Each complete dice group (with its trailing modifier) owns a range of
+         * raw Formula text. A caret or text selection inside one range selects
+         * that clicker group; anywhere else (whitespace between groups, an
+         * incomplete token, malformed text) clears the selection. Only the
+         * selection changes: Formula text, counts, modes and modifiers do not.
+         */
+        function findFormulaGroupSpans(rawValue) {
+          let compact = "";
+          const rawPositions = [];
+          for (let index = 0; index < rawValue.length; index += 1) {
+            if (/\s/.test(rawValue[index])) continue;
+            compact += rawValue[index].toLowerCase();
+            rawPositions.push(index);
+          }
+          const spans = [];
+          let cursor = 0;
+          // A signed number directly followed by "d" (for example "+1d7") is an
+          // invalid die, not a modifier, so the preceding group stays selectable.
+          while (cursor < compact.length) {
+            const match = compact
+              .slice(cursor)
+              .match(/^(\d*)d(100|20|12|10|8|6|4)([ad]?)/);
+            if (!match) {
+              cursor += 1;
+              continue;
+            }
+            const startCursor = cursor;
+            const leadingPlusIndex =
+              startCursor > 0 && compact[startCursor - 1] === "+"
+                ? rawPositions[startCursor - 1]
+                : null;
+            cursor += match[0].length;
+            const declaredQuantity = match[1] === "" ? 1 : Number(match[1]);
+            const groupMode =
+              match[3] === "a"
+                ? "advantage"
+                : match[3] === "d"
+                  ? "disadvantage"
+                  : null;
+            let modifierValue = 0,
+              modifierStart = null,
+              modifierCaretEnd = null;
+            const modifierMatch = startsNextDiceGroup(compact, cursor)
+              ? null
+              : compact.slice(cursor).match(/^([+-]\d+)(?![\dd])/);
+            if (modifierMatch) {
+              modifierStart = rawPositions[cursor];
+              modifierValue = Number(modifierMatch[1]);
+              cursor += modifierMatch[1].length;
+              modifierCaretEnd =
+                cursor < rawPositions.length
+                  ? rawPositions[cursor]
+                  : rawValue.length;
+            }
+            spans.push({
+              start:
+                leadingPlusIndex === null
+                  ? rawPositions[startCursor]
+                  : leadingPlusIndex + 1,
+              end:
+                modifierCaretEnd ?? rawPositions[cursor - 1] + 1,
+              modifierStart,
+              modifierCaretEnd,
+              quantity:
+                groupMode && declaredQuantity === 1 ? 2 : declaredQuantity,
+              sides: Number(match[2]),
+              mode: groupMode,
+              modifierValue,
+            });
+          }
+          // Only trust the text when it describes exactly the clicker groups;
+          // otherwise a highlight could point at the wrong die.
+          const matchesClicker =
+            spans.length === formulaGroups.length &&
+            spans.every((span, index) => {
+              const group = formulaGroups[index];
+              return (
+                span.quantity === group.quantity &&
+                span.sides === group.sides &&
+                span.mode === (group.mode || null) &&
+                span.modifierValue === (group.modifierValue || 0)
+              );
+            });
+          return matchesClicker ? spans : null;
+        }
+        function syncSelectionFromCaret() {
+          if (document.activeElement !== formulaInput) return;
+          const selectionStart = formulaInput.selectionStart,
+            selectionEnd = formulaInput.selectionEnd;
+          if (selectionStart === null || selectionEnd === null) return;
+          const spans = findFormulaGroupSpans(formulaInput.value);
+          const nextIndex = spans
+            ? spans.findIndex(
+                (span) =>
+                  selectionStart >= span.start && selectionEnd <= span.end,
+              )
+            : -1;
+          const modifierSpan = spans?.find(
+            (span) =>
+              span.modifierStart !== null &&
+              selectionStart >= span.modifierStart &&
+              selectionEnd <= span.modifierCaretEnd,
+          );
+          setFormulaModifierHighlight(
+            parseFormula().valid && Boolean(modifierSpan),
+          );
+          if (nextIndex === activeGroupIndex) return;
+          activeGroupIndex = nextIndex;
+          if (nextIndex >= 0) {
+            const group = formulaGroups[nextIndex];
+            sides = group.sides;
+            mode = group.mode || "normal";
+            localStorage.setItem("dice-roller.selected-die", String(sides));
+            localStorage.setItem("dice-roller.mode", mode);
+            status.textContent = "d" + sides + " selecionado a partir da Fórmula.";
+          } else {
+            sides = null;
+            mode = "normal";
+            status.textContent = "Nenhum grupo de dados selecionado na Fórmula.";
+          }
+          refreshControls();
+        }
+        // Leaving the Formula never leaves a populated pool without a target.
+        function restoreDefaultSelection() {
+          if (activeGroupIndex >= 0 || !formulaGroups.length) return;
+          activeGroupIndex = formulaGroups.length - 1;
+          sides = formulaGroups[activeGroupIndex].sides;
+          mode = formulaGroups[activeGroupIndex].mode || "normal";
+          refreshControls();
+        }
+        function focusGroup(next) {
+          if (!allowed.includes(next) || !pool[next]) return;
+          for (let index = formulaGroups.length - 1; index >= 0; index -= 1) {
+            if (formulaGroups[index].sides !== next) continue;
+            activeGroupIndex = index;
+            sides = next;
+            mode = formulaGroups[index].mode || "normal";
+            localStorage.setItem("dice-roller.selected-die", String(sides));
+            localStorage.setItem("dice-roller.mode", mode);
+            refreshControls();
+            return;
+          }
+        }
+        let pointerDownActiveGroupIndex = null,
+          preserveFormulaOnNextBlur = false;
+        function selectDie(next, activeBeforeClick = activeGroupIndex) {
+          if (!allowed.includes(next)) return;
+          let nextGroupIndex = -1;
+          for (let index = formulaGroups.length - 1; index >= 0; index -= 1) {
+            if (formulaGroups[index].sides === next) {
+              nextGroupIndex = index;
+              break;
+            }
+          }
+          /*
+           * IMP-250 — In a multi-type pool, the first click on another existing
+           * group changes selection only; the next click uses the increment path.
+           * Pointerdown captures the prior selection before focus; selection
+           * also preserves the Formula draft through its blur event.
+           */
+          const distinctDieTypes = new Set(
+            formulaGroups.map((group) => group.sides),
+          ).size;
+          if (
+            nextGroupIndex >= 0 &&
+            distinctDieTypes >= 2 &&
+            nextGroupIndex !== activeBeforeClick
+          ) {
+            activeGroupIndex = nextGroupIndex;
+            sides = next;
+            mode = formulaGroups[nextGroupIndex].mode || "normal";
+            localStorage.setItem("dice-roller.selected-die", String(sides));
+            localStorage.setItem("dice-roller.mode", mode);
+            refreshControls();
+            status.textContent =
+              "d" + sides + " selecionado. Clique novamente para adicionar um dado.";
+            return;
+          }
+          if (nextGroupIndex < 0) {
+            formulaGroups.push({
+              quantity: 0,
+              sides: next,
+              mode: null,
+              modifierValue: 0,
+            });
+            nextGroupIndex = formulaGroups.length - 1;
+          }
+          formulaGroups[nextGroupIndex].quantity = Math.min(
+            maxQuantity,
+            formulaGroups[nextGroupIndex].quantity + 1,
+          );
+          pool[next] = formulaGroups
+            .filter((group) => group.sides === next)
+            .reduce((sum, group) => sum + group.quantity, 0);
+          sides = next;
+          activeGroupIndex = nextGroupIndex;
+          mode = formulaGroups[activeGroupIndex].mode || "normal";
+          localStorage.setItem("dice-roller.selected-die", String(sides));
+          localStorage.setItem("dice-roller.mode", mode);
+          persistPool();
+          refreshControls();
+          syncFormulaFromClicker();
+          clearRoll();
+          status.textContent =
+            "d" +
+            sides +
+            " adicionado. Fórmula atualizada para " +
+            formulaInput.value +
+            ".";
+        }
+        /*
+         * IMP-236 — A context-menu gesture removes exactly one die from the
+         * targeted clicker group. It mirrors selectDie's "last matching group"
+         * rule so independently mode-tagged Formula groups stay intact.
+         *
+         * IMP-241 — Advantage and Disadvantage require at least two dice.
+         * Crossing from two dice to one therefore returns only that group to
+         * Normal before the shared Formula is serialized.
+         */
+        function decrementDie(target) {
+          if (!allowed.includes(target) || pool[target] < 1) return;
+          let targetGroupIndex = -1;
+          for (let index = formulaGroups.length - 1; index >= 0; index -= 1) {
+            if (formulaGroups[index].sides === target) {
+              targetGroupIndex = index;
+              break;
+            }
+          }
+          if (targetGroupIndex < 0) return;
+
+          const removedActiveGroup = targetGroupIndex === activeGroupIndex;
+          if (formulaGroups[targetGroupIndex].quantity > 1) {
+            formulaGroups[targetGroupIndex].quantity -= 1;
+            if (
+              formulaGroups[targetGroupIndex].quantity === 1 &&
+              formulaGroups[targetGroupIndex].mode
+            ) {
+              formulaGroups[targetGroupIndex].mode = null;
+            }
+          } else {
+            formulaGroups.splice(targetGroupIndex, 1);
+            if (targetGroupIndex < activeGroupIndex) activeGroupIndex -= 1;
+            if (removedActiveGroup) {
+              activeGroupIndex = formulaGroups.length
+                ? Math.min(targetGroupIndex, formulaGroups.length - 1)
+                : -1;
+            }
+          }
+
+          pool[target] = formulaGroups
+            .filter((group) => group.sides === target)
+            .reduce((sum, group) => sum + group.quantity, 0);
+
+          if (removedActiveGroup) {
+            const activeGroup = formulaGroups[activeGroupIndex];
+            sides = activeGroup?.sides || null;
+            mode = activeGroup?.mode || "normal";
+          }
+
+          if (sides) {
+            localStorage.setItem("dice-roller.selected-die", String(sides));
+          } else {
+            localStorage.removeItem("dice-roller.selected-die");
+          }
+          localStorage.setItem("dice-roller.mode", mode);
+          persistPool();
+          refreshControls();
+          syncFormulaFromClicker();
+          clearRoll();
+          status.textContent = pool[target]
+            ? "Removido um d" +
+              target +
+              ". " +
+              (pool[target] === 1 ? "Resta " : "Restam ") +
+              pool[target] +
+              ". Fórmula atualizada para " +
+              formulaInput.value +
+              "."
+            : "d" +
+              target +
+              " removido do pool." +
+              (formulaInput.value
+                ? " Fórmula atualizada para " + formulaInput.value + "."
+                : " O pool de dados está vazio.");
+        }
+        function clearPool() {
+          allowed.forEach((die) => (pool[die] = 0));
+          formulaGroups = [];
+          activeGroupIndex = -1;
+          sides = null;
+          mode = "normal";
+          groupModifierInput.value = "";
+          persistPool();
+          localStorage.removeItem("dice-roller.selected-die");
+          localStorage.setItem("dice-roller.mode", mode);
+          formulaInput.value = "";
+          setFormulaModifierHighlight(false);
+          persistSharedFormula("");
+          setGroupModifierValidation(true);
+          setFormulaValidation(true);
+          refreshControls();
+          clearRoll();
+          status.textContent = "Fórmula e botões de dados limpos.";
+        }
+        function setMode(next) {
+          if (!sides || !pool[sides]) return;
+          /*
+           * IMP-228 — Normal is implicit. Advantage and Disadvantage are
+           * independent toggles: selecting either targets the current active
+           * die, while selecting the active mode again returns to Normal.
+           */
+          mode =
+            ["advantage", "disadvantage"].includes(next) && next !== mode
+              ? next
+              : "normal";
+          if (activeGroupIndex < 0 || formulaGroups[activeGroupIndex]?.sides !== sides) {
+            for (let index = formulaGroups.length - 1; index >= 0; index -= 1) {
+              if (formulaGroups[index].sides === sides) {
+                activeGroupIndex = index;
+                break;
+              }
+            }
+          }
+          if (activeGroupIndex >= 0) {
+            formulaGroups[activeGroupIndex].mode =
+              mode === "normal" ? null : mode;
+            if (
+              mode !== "normal" &&
+              formulaGroups[activeGroupIndex].quantity === 1
+            ) {
+              formulaGroups[activeGroupIndex].quantity = 2;
+              pool[sides] = formulaGroups
+                .filter((group) => group.sides === sides)
+                .reduce((sum, group) => sum + group.quantity, 0);
+              persistPool();
+            }
+          }
+          localStorage.setItem("dice-roller.mode", mode);
+          refreshControls();
+          syncFormulaFromClicker();
+          clearRoll();
+          status.textContent =
+            mode === "normal"
+              ? "Rolagem normal selecionada."
+              : modeTitle() +
+                " selecionada: role " +
+                pool[sides] +
+                (pool[sides] === 1 ? " dado" : " dados") +
+                " do d" + sides + " ativo e mantenha o valor " +
+                (mode === "advantage" ? "maior" : "menor") +
+                ".";
+        }
+        function secureRoll(max) {
+          if (!globalThis.crypto?.getRandomValues)
+            return Math.floor(Math.random() * max) + 1;
+          const range = 0x100000000,
+            limit = range - (range % max),
+            value = new Uint32Array(1);
+          do {
+            crypto.getRandomValues(value);
+          } while (value[0] >= limit);
+          return (value[0] % max) + 1;
+        }
+        function rollFormula() {
+          const formula = parseFormula();
+          setFormulaValidation(formula.valid, formula.message);
+          if (!formula.valid) {
+            status.textContent = formula.message + " Rolagem da fórmula não realizada.";
+            formulaInput.focus();
+            return;
+          }
+          formulaInput.value = serializeParsedFormula(formula);
+          applyFormulaToClicker(formula);
+          syncSelectionFromCaret();
+          const rolledGroups = formula.groups.map((group) => {
+            const values = Array.from({ length: group.quantity }, () =>
+              secureRoll(group.sides),
+            );
+            const retained =
+              group.mode === "advantage"
+                ? Math.max(...values)
+                : group.mode === "disadvantage"
+                  ? Math.min(...values)
+                  : null;
+            return {
+              ...group,
+              values,
+              retained,
+              subtotal:
+                retained === null
+                  ? values.reduce((sum, value) => sum + value, 0) +
+                    group.modifierValue
+                  : retained + group.modifierValue,
+            };
+          });
+          const groupItems = rolledGroups.map((group, index) => {
+            const container = document.createElement("section");
+            container.className = "formula-result-group";
+            container.setAttribute(
+              "aria-label",
+              group.label + " resultados, subtotal " + group.subtotal,
+            );
+            const heading = document.createElement("div");
+            heading.className = "formula-group-heading";
+            const label = document.createElement("span");
+            label.className = "formula-group-label";
+            label.textContent = group.label;
+            const groupTotal = document.createElement("span");
+            groupTotal.className = "formula-group-total";
+            groupTotal.textContent =
+              group.retained === null
+                ? "Subtotal " + group.subtotal
+                : group.modifierValue
+                  ? "Mantido " +
+                    group.retained +
+                    " · subtotal " +
+                    group.subtotal
+                  : "Mantido " + group.retained;
+            heading.append(label, groupTotal);
+            const values = document.createElement("div");
+            values.className = "formula-group-values";
+            const retainedIndex =
+              group.retained === null ? -1 : group.values.indexOf(group.retained);
+            const valueItems = group.values.map((value, valueIndex) =>
+              createRollValue(
+                value,
+                group.sides,
+                valueIndex === retainedIndex,
+                group.mode,
+              ),
+            );
+            if (group.modifierValue) {
+              const modifierItem = document.createElement("span");
+              modifierItem.className = "roll-modifier";
+              modifierItem.textContent = formatSigned(group.modifierValue);
+              modifierItem.setAttribute(
+                "aria-label",
+                group.label + " modificador " + group.modifierValue,
+              );
+              valueItems.push(modifierItem);
+            }
+            values.append(...valueItems);
+            container.append(heading, values);
+            return container;
+          });
+          const diceTotal = rolledGroups.reduce(
+            (sum, group) => sum + group.subtotal,
+            0,
+          );
+          const finalTotal = diceTotal;
+          results.className = "formula-results";
+          results.replaceChildren(...groupItems);
+          resultHeading.textContent = "Fórmula · " + formula.display;
+          retainedNote.hidden = true;
+          retainedNote.className = "retained-note";
+          retainedNote.textContent = "";
+          total.hidden = false;
+          totalLabel.textContent = "Total final";
+          totalValue.textContent = String(finalTotal);
+          modifierBreakdown.hidden = false;
+          modifierBreakdown.textContent =
+            rolledGroups
+              .map(
+                (group) =>
+                  group.label +
+                  (group.retained === null ? " subtotal " : " mantido ") +
+                  (group.retained === null
+                    ? String(group.subtotal)
+                    : String(group.retained) +
+                      (group.modifierValue
+                        ? " + modificador do grupo " +
+                          formatSigned(group.modifierValue) +
+                          " = subtotal " +
+                          group.subtotal
+                        : "")),
+              )
+              .join(" + ") +
+            " = " +
+            finalTotal;
+          status.textContent =
+            "Fórmula " +
+            formula.display +
+            " rolada. " +
+            rolledGroups
+              .map(
+                (group) =>
+                  group.label +
+                  " valores " +
+                  group.values.join(", ") +
+                  (group.retained === null ? ", subtotal " : ", mantido ") +
+                  (group.retained === null
+                    ? group.subtotal
+                    : group.retained +
+                      (group.modifierValue
+                        ? ", modificador do grupo " +
+                          formatSigned(group.modifierValue) +
+                          ", subtotal " +
+                          group.subtotal
+                        : "")),
+              )
+              .join("; ") +
+            ". Total final " +
+            finalTotal +
+            ".";
+        }
+        buttons.forEach((b) =>
+          b.addEventListener("pointerdown", () => {
+            pointerDownActiveGroupIndex = activeGroupIndex;
+            let clickedGroupIndex = -1;
+            for (
+              let index = formulaGroups.length - 1;
+              index >= 0;
+              index -= 1
+            ) {
+              if (formulaGroups[index].sides === Number(b.dataset.sides)) {
+                clickedGroupIndex = index;
+                break;
+              }
+            }
+            preserveFormulaOnNextBlur =
+              document.activeElement === formulaInput &&
+              clickedGroupIndex >= 0 &&
+              new Set(formulaGroups.map((group) => group.sides)).size >= 2 &&
+              clickedGroupIndex !== activeGroupIndex;
+          }),
+        );
+        buttons.forEach((b) =>
+          b.addEventListener("click", (event) => {
+            const activeBeforeClick =
+              event.detail > 0 ? pointerDownActiveGroupIndex : null;
+            pointerDownActiveGroupIndex = null;
+            selectDie(
+              Number(b.dataset.sides),
+              activeBeforeClick ?? activeGroupIndex,
+            );
+          }),
+        );
+        buttons.forEach((b) =>
+          b.addEventListener("focus", () => focusGroup(Number(b.dataset.sides))),
+        );
+        buttons.forEach((b) =>
+          b.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+            decrementDie(Number(b.dataset.sides));
+          }),
+        );
+        modeButtons.forEach((b) =>
+          b.addEventListener("click", () => setMode(b.dataset.mode)),
+        );
+        groupModifierInput.addEventListener("input", () => {
+          const groupModifier = parseGroupModifier();
+          setGroupModifierValidation(groupModifier.valid);
+          if (!groupModifier.valid) {
+            status.textContent =
+              "O modificador do grupo deve ser um número inteiro com sinal. Nada foi alterado.";
+            return;
+          }
+          const activeGroup = formulaGroups[activeGroupIndex];
+          if (!activeGroup) return;
+          activeGroup.modifierValue = groupModifier.value;
+          syncFormulaFromClicker();
+          refreshControls();
+          clearRoll();
+          status.textContent = groupModifier.showBreakdown
+            ? "Modificador do grupo d" +
+              activeGroup.sides +
+              " ativo definido como " +
+              formatSigned(groupModifier.value) +
+              ". Fórmula atualizada para " +
+              formulaInput.value +
+              "."
+            : "Modificador do grupo ativo removido. Fórmula atualizada.";
+        });
+        groupModifierInput.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          rollFormula();
+        });
+        formulaInput.addEventListener("input", () => {
+          const formula = parseFormula();
+          setFormulaValidation(formula.valid, formula.message);
+          if (!formula.valid) {
+            setFormulaModifierHighlight(false);
+            const draft = parseIncompleteFormulaDraft();
+            if (draft.recognized) {
+              applyIncompleteFormulaDraftToClicker(draft);
+              syncSelectionFromCaret();
+              status.textContent = draft.groups.length
+                ? "Grupo incompleto da Fórmula removido dos botões; os grupos válidos permanecem."
+                : "A Fórmula incompleta deixa os botões vazios.";
+              return;
+            }
+            status.textContent =
+              formula.message + " Os botões de dados permanecem inalterados.";
+            return;
+          }
+          applyFormulaToClicker(formula);
+          syncSelectionFromCaret();
+          clearRoll();
+          status.textContent =
+            "Botões de dados atualizados a partir da Fórmula " + formula.display + ".";
+        });
+        // Caret or selection moves that do not change the text.
+        ["keyup", "pointerup", "focus", "select"].forEach((type) =>
+          formulaInput.addEventListener(type, syncSelectionFromCaret),
+        );
+        document.addEventListener("selectionchange", syncSelectionFromCaret);
+        formulaInput.addEventListener("blur", () => {
+          setFormulaModifierHighlight(false);
+          if (preserveFormulaOnNextBlur) {
+            preserveFormulaOnNextBlur = false;
+            return;
+          }
+          restoreDefaultSelection();
+          const formula = parseFormula();
+          if (!formula.valid) return;
+          formulaInput.value = serializeParsedFormula(formula);
+          applyFormulaToClicker(formula, { keepActive: true });
+        });
+        /*
+         * IMP-214 — Formula rolls share the existing Latest Result output.
+         * Bind the visible action directly so its result does not depend on the
+         * embed forwarding a form-submit event; Enter uses the same roll path.
+         */
+        formulaRollButton.addEventListener("click", rollFormula);
+        formulaInput.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          rollFormula();
+        });
+        formulaForm.addEventListener("submit", (event) =>
+          event.preventDefault(),
+        );
+        clearPoolButton.addEventListener("click", clearPool);
+        themeToggle.addEventListener("click", () => {
+          const nextTheme =
+            document.documentElement.dataset.theme === "dark"
+              ? "light"
+              : "dark";
+          applyTheme(nextTheme, { persist: true, announce: true });
+        });
+        settingsTrigger.addEventListener("click", openSettings);
+        document.addEventListener("click", (event) => {
+          if (
+            !settingsFlyout.hidden &&
+            !settingsFlyout.contains(event.target) &&
+            !settingsTrigger.contains(event.target)
+          )
+            closeSettings();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (settingsFlyout.hidden) return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeSettings();
+            return;
+          }
+          if (event.key !== "Tab") return;
+          const activeElement = document.activeElement;
+          if (
+            (event.shiftKey && activeElement === firstSettingsControl) ||
+            (!event.shiftKey && activeElement === themeToggle)
+          ) {
+            event.preventDefault();
+            closeSettings();
+          }
+        });
+        // Initialization.
+        applyTheme(savedTheme);
+        const savedFormula = localStorage.getItem(formulaKey);
+        if (savedFormula) {
+          formulaInput.value = savedFormula;
+          const initialFormula = parseFormula();
+          if (initialFormula.valid) {
+            setFormulaValidation(true);
+            formulaInput.value = serializeParsedFormula(initialFormula);
+            applyFormulaToClicker(initialFormula, { persist: false });
+            persistSharedFormula(formulaInput.value);
+          } else {
+            const initialDraft = parseIncompleteFormulaDraft();
+            if (initialDraft.recognized) {
+              setFormulaValidation(false, initialFormula.message);
+              applyIncompleteFormulaDraftToClicker(initialDraft);
+            } else {
+              syncFormulaFromClicker();
+            }
+          }
+        } else {
+          syncFormulaFromClicker();
+          refreshControls();
+        }
+        clearRoll();
+      })();
+    </script>
+  </body>
+</html>
