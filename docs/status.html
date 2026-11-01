@@ -5,20 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 /* =====================================================
-   CONFIGURAÇÃO DO FUNDO
+   TOKENS — padrão dos callouts do Notion
    ===================================================== */
 :root {
     color-scheme: light dark;
-}
 
-/* MODO ESCURO */
-html, body {
-    background-color: #191919 !important;
+    --page-bg: #191919;
+    --card-bg: transparent;          /* callout sem preenchimento */
+    --card-border: #30302e;          /* mesma borda dos atributos */
+    --card-radius: 8px;
+    --track: rgba(255, 255, 255, 0.08);
+    --ghost: rgba(255, 255, 255, 0.38);
+    --check-ink: #191919;
 }
 
 /* MODO CLARO */
 @media (prefers-color-scheme: light) {
-    html, body { background-color: #ffffff !important; }
+    :root {
+        --page-bg: #ffffff;
+        --card-border: #e3e2e0;
+        --track: rgba(55, 53, 47, 0.09);
+        --ghost: rgba(55, 53, 47, 0.38);
+        --check-ink: #ffffff;
+    }
+}
+
+html, body {
+    background-color: var(--page-bg) !important;
 }
 
 /* =====================================================
@@ -31,7 +44,12 @@ html, body {
     width: 100%;
     min-height: 100%;
 }
-body { font-family: Arial, Helvetica, sans-serif; }
+body {
+    /* mesma pilha de fontes do Notion, para se misturar com a página */
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont,
+                 "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
 
 /* =====================================================
    CONTAINER
@@ -43,23 +61,28 @@ body { font-family: Arial, Helvetica, sans-serif; }
 }
 
 /* =====================================================
-   STATUS
+   STATUS (callout)
    ===================================================== */
 .status {
     width: 100%;
-    background: #373737;
-    border-radius: 9px;
-    padding: 17px 17px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    /* 1px a menos de padding: a borda entra no lugar, altura idêntica */
+    padding: 16px 16px 15px;
     margin-bottom: 12px;
     --status-color: #ffffff;
+    /* versões suaves da cor do status (fallback + color-mix) */
+    --status-soft: rgba(255, 255, 255, 0.10);
+    --status-soft-strong: rgba(255, 255, 255, 0.18);
+    --status-dim: var(--status-color);
 }
-
-/* =====================================================
-   MODO CLARO
-   ===================================================== */
-@media (prefers-color-scheme: light) {
-    .status { background: #eeeeee; }
-    .bar { background: #d8d8d8; }
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+    .status {
+        --status-soft: color-mix(in srgb, var(--status-color) 14%, transparent);
+        --status-soft-strong: color-mix(in srgb, var(--status-color) 26%, transparent);
+        --status-dim: color-mix(in srgb, var(--status-color) 78%, transparent);
+    }
 }
 
 /* =====================================================
@@ -97,8 +120,9 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .status-name {
     color: var(--status-color);
     font-size: 12px;
-    font-weight: bold;
-    letter-spacing: 0.3px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    line-height: 17px;
 }
 
 /* =====================================================
@@ -116,8 +140,8 @@ body { font-family: Arial, Helvetica, sans-serif; }
    ===================================================== */
 .bar {
     flex: 1;
-    height: 9px;
-    background: #242424;
+    height: 8px;
+    background: var(--track);
     border-radius: 20px;
     overflow: hidden;
 }
@@ -130,45 +154,54 @@ body { font-family: Arial, Helvetica, sans-serif; }
 }
 
 /* =====================================================
-   CONTROLES DOS VALORES
+   CONTROLES DOS VALORES   [−]  28  [+]  /  28
    ===================================================== */
 .values {
     display: grid;
-    grid-template-columns: 18px 32px 18px 9px 30px;
+    grid-template-columns: 20px 20px 20px 10px 33px;
     align-items: center;
     justify-content: end;
-    width: 117px;
+    width: 105px;
     height: 20px;
     flex-shrink: 0;
 }
 
 /* =====================================================
-   BOTÕES
+   BOTÕES − / +
    ===================================================== */
 .adjust-button {
-    width: 0px;
+    width: 20px;
     height: 20px;
     padding: 0;
     margin: 0;
     border: none;
-    border-radius: 0px;
+    border-radius: 6px;
     background: transparent;
     color: var(--status-color);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    font-weight: bold;
-    line-height: 12px;
-    text-align: center;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    display: grid;
+    place-items: center;
     cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 0.12s ease, background 0.12s ease;
+    opacity: 0.6;
+    transition: opacity 0.12s ease, background 0.12s ease, transform 0.08s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 .adjust-button:hover {
     opacity: 1;
-    background: rgba(255,255,255,0.07);
+    background: var(--status-soft);
 }
 .adjust-button:active {
-    background: rgba(255,255,255,0.12);
+    background: var(--status-soft-strong);
+    transform: scale(0.92);
+}
+.adjust-button:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--status-color);
+    outline-offset: 1px;
 }
 .decrease { grid-column: 1; }
 .increase { grid-column: 3; }
@@ -177,28 +210,48 @@ body { font-family: Arial, Helvetica, sans-serif; }
    VALOR ATUAL E MÁXIMO
    ===================================================== */
 .current, .maximum {
+    height: 20px;
+    min-width: 0;
     padding: 0;
     margin: 0;
     border: none;
     outline: none;
+    border-radius: 5px;
     background: transparent;
     color: var(--status-color);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: inherit;
     font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    transition: background 0.12s ease, box-shadow 0.12s ease;
 }
 .current {
     grid-column: 2;
-    width: 36px !important;
+    width: 100%;
     text-align: center;
+    font-weight: 700;
 }
 .maximum {
     grid-column: 5;
-    width: 36px !important;
+    width: 100%;
+    padding-left: 5px;
     text-align: left;
+  	font-weight: 700;   /* 400 = normal, 600 = semi, 700 = negrito */
+    color: var(--status-dim);
+}
+.value-input:hover {
+    background: var(--status-soft);
+}
+.value-input:focus {
+    background: var(--status-soft);
+    box-shadow: inset 0 0 0 1px var(--status-dim);
+    color: var(--status-color);
 }
 .value-input::-webkit-inner-spin-button,
 .value-input::-webkit-outer-spin-button {
-    opacity: 0;
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 /* =====================================================
@@ -206,10 +259,12 @@ body { font-family: Arial, Helvetica, sans-serif; }
    ===================================================== */
 .separator {
     grid-column: 4;
-    width: 9px;
-    color: var(--status-color);
-    font-size: 17px;
-    text-align: left;
+    width: 10px;
+    color: var(--status-dim);
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 20px;
+    text-align: center;
 }
 
 /* =====================================================
@@ -226,10 +281,12 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .condition {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     color: var(--status-color);
     font-size: 10px;
-    font-weight: normal;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    line-height: 12px;
     cursor: pointer;
     user-select: none;
 }
@@ -240,8 +297,8 @@ body { font-family: Arial, Helvetica, sans-serif; }
     height: 12px;
     padding: 0;
     margin: 0;
-    border: 1px solid #aaa;
-    border-radius: 2px;
+    border: 1.5px solid var(--ghost);
+    border-radius: 3px;
     background: transparent;
     cursor: pointer;
     position: relative;
@@ -249,28 +306,38 @@ body { font-family: Arial, Helvetica, sans-serif; }
     transition: background 0.12s ease, border-color 0.12s ease;
 }
 .condition input:hover { border-color: var(--status-color); }
+.condition input:focus-visible {
+    outline: 2px solid var(--status-color);
+    outline-offset: 2px;
+}
 .condition input:checked {
     background: var(--status-color);
     border-color: var(--status-color);
 }
 .condition input:checked::after {
-    content: "x";
+    content: "";
     position: absolute;
-    left: 2px;
-    top: -3px;
-    color: #ffffff;
-    font-size: 13px;
+    left: 2.5px;
+    top: 0;
+    width: 3px;
+    height: 6px;
+    border: solid var(--check-ink);
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
 }
 
 /* =====================================================
    RESPONSIVO
    ===================================================== */
 @media (max-width: 500px) {
-    .status { padding: 16px 14px; }
+    .status { padding: 15px 13px; }
     .bar-wrapper { gap: 7px; }
-    .values { grid-template-columns: 17px 33px 17px 8px 33px; width: 108px; }
-    .current, .maximum { width: 33px !important; }
+    .values { grid-template-columns: 19px 31px 19px 8px 31px; width: 108px; }
     .conditions { gap: 10px; margin-left: 21px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
 }
 </style>
 </head>
@@ -294,11 +361,11 @@ body { font-family: Arial, Helvetica, sans-serif; }
     <div class="bar-wrapper">
         <div class="bar"><div class="bar-fill"></div></div>
         <div class="values">
-            <button class="adjust-button decrease" type="button">−</button>
-            <input class="value-input current" type="number" min="0">
-            <button class="adjust-button increase" type="button">+</button>
+            <button class="adjust-button decrease" type="button" aria-label="Diminuir saúde">−</button>
+            <input class="value-input current" aria-label="Saúde atual" type="number" min="0">
+            <button class="adjust-button increase" type="button" aria-label="Aumentar saúde">+</button>
             <span class="separator">/</span>
-            <input class="value-input maximum" type="number" min="1">
+            <input class="value-input maximum" aria-label="Saúde máximo" type="number" min="1">
         </div>
     </div>
     <div class="conditions">
@@ -327,11 +394,11 @@ body { font-family: Arial, Helvetica, sans-serif; }
     <div class="bar-wrapper">
         <div class="bar"><div class="bar-fill"></div></div>
         <div class="values">
-            <button class="adjust-button decrease" type="button">−</button>
-            <input class="value-input current" type="number" min="0">
-            <button class="adjust-button increase" type="button">+</button>
+            <button class="adjust-button decrease" type="button" aria-label="Diminuir sanidade">−</button>
+            <input class="value-input current" aria-label="Sanidade atual" type="number" min="0">
+            <button class="adjust-button increase" type="button" aria-label="Aumentar sanidade">+</button>
             <span class="separator">/</span>
-            <input class="value-input maximum" type="number" min="1">
+            <input class="value-input maximum" aria-label="Sanidade máximo" type="number" min="1">
         </div>
     </div>
     <div class="conditions">
@@ -354,11 +421,11 @@ body { font-family: Arial, Helvetica, sans-serif; }
     <div class="bar-wrapper">
         <div class="bar"><div class="bar-fill"></div></div>
         <div class="values">
-            <button class="adjust-button decrease" type="button">−</button>
-            <input class="value-input current" type="number" min="0">
-            <button class="adjust-button increase" type="button">+</button>
+            <button class="adjust-button decrease" type="button" aria-label="Diminuir esforço">−</button>
+            <input class="value-input current" aria-label="Esforço atual" type="number" min="0">
+            <button class="adjust-button increase" type="button" aria-label="Aumentar esforço">+</button>
             <span class="separator">/</span>
-            <input class="value-input maximum" type="number" min="1">
+            <input class="value-input maximum" aria-label="Esforço máximo" type="number" min="1">
         </div>
     </div>
 </div>
@@ -379,11 +446,11 @@ body { font-family: Arial, Helvetica, sans-serif; }
     <div class="bar-wrapper">
         <div class="bar"><div class="bar-fill"></div></div>
         <div class="values">
-            <button class="adjust-button decrease" type="button">−</button>
-            <input class="value-input current" type="number" min="0">
-            <button class="adjust-button increase" type="button">+</button>
+            <button class="adjust-button decrease" type="button" aria-label="Diminuir ocultismo">−</button>
+            <input class="value-input current" aria-label="Ocultismo atual" type="number" min="0">
+            <button class="adjust-button increase" type="button" aria-label="Aumentar ocultismo">+</button>
             <span class="separator">/</span>
-            <input class="value-input maximum" type="number" min="1">
+            <input class="value-input maximum" aria-label="Ocultismo máximo" type="number" min="1">
         </div>
     </div>
 </div>
