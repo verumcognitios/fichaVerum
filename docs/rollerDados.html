@@ -51,6 +51,8 @@
         --radius: 8px;
         --radius-lg: 12px;
         --shadow: 0 1px 2px rgba(0, 0, 0, 0.36), 0 4px 12px rgba(0, 0, 0, 0.28);
+        /* Altura fixa da área de resultado = altura de uma rolagem já feita. */
+        --result-body-height: 88px;
       }
 
       html {
@@ -248,24 +250,6 @@
         appearance: none;
       }
 
-      .modifier-input {
-        width: 96px;
-        min-height: 44px;
-        padding: 0 var(--space-2);
-        color: var(--text);
-        font-weight: 700;
-        text-align: center;
-        background: var(--canvas);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-      }
-
-      .modifier-input:disabled {
-        color: var(--muted);
-        background: var(--surface-2);
-        cursor: not-allowed;
-      }
-
       .formula-input {
         width: 100%;
         min-width: 0;
@@ -284,29 +268,6 @@
         min-height: 44px;
         color: var(--on-blue);
         background: var(--blue);
-      }
-
-      .mode-controls {
-        display: flex;
-        width: 100%;
-        max-width: 100%;
-        padding: 3px;
-        gap: 4px;
-        background: var(--surface-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-      }
-
-      .mode {
-        position: relative;
-        flex: 1;
-        min-width: 0;
-        min-height: 44px;
-        min-width: 44px;
-        padding: 0 6px;
-        font-size: 12px;
-        letter-spacing: 0.03em;
-        background: transparent;
       }
 
       .roll {
@@ -363,27 +324,6 @@
         margin-top: 0;
       }
 
-      /*
-       * IMP-245 — Selected-group contextual controls.
-       * The former pool summary becomes one compact editor for the active
-       * group's modifier and mode; quantity remains owned by the dice tiles.
-       */
-      .active-group-strip {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: var(--space-3);
-        margin-top: var(--space-3);
-        padding: var(--space-2);
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-      }
-
-      .active-group-strip[hidden] {
-        display: none;
-      }
-
       .clear-pool {
         flex: 0 0 auto;
         min-height: 44px;
@@ -433,19 +373,6 @@
         gap: 4px;
       }
 
-      /*
-       * IMP-243 — Active-group modifier editor.
-       * This separate field keeps the approved manual Modifier independent.
-       */
-      .group-modifier-row {
-        display: grid;
-        grid-template-columns: auto auto;
-        align-items: center;
-        justify-content: start;
-        min-width: 0;
-        gap: var(--space-2);
-      }
-
       .field-error {
         margin-top: var(--space-1);
         color: var(--red);
@@ -483,8 +410,28 @@
       }
 
       .formula-field {
+        position: relative;
         display: grid;
         min-width: 0;
+      }
+
+      /* O erro da fórmula flutua sobre o conteúdo e não empurra o layout. */
+      .formula-field .field-error {
+        position: absolute;
+        z-index: 5;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        margin: 0;
+        padding: 6px var(--space-2);
+        background: var(--surface);
+        border: 1px solid var(--red);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      .formula-field .field-error[hidden] {
+        display: none;
       }
 
       .stepper {
@@ -508,14 +455,22 @@
         display: flex;
         align-items: baseline;
         justify-content: space-between;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         width: 100%;
         min-width: 0;
         gap: 4px 12px;
       }
 
+      .result-kicker {
+        flex: 0 0 auto;
+      }
+
+      /* Uma linha com reticências: um texto longo nunca aumenta a altura. */
       .result-label {
-        overflow-wrap: anywhere;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       .result-card-header {
@@ -531,8 +486,17 @@
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         min-width: 0;
-        min-height: 56px;
+        height: var(--result-body-height);
+        grid-template-rows: minmax(0, 1fr);
         gap: var(--space-2) var(--space-4);
+      }
+
+      /* Se houver muitos dados, o resultado rola dentro da área fixa. */
+      .result-body > #results {
+        max-height: 100%;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
       }
 
       .results {
@@ -660,6 +624,7 @@
 
       .formula-result-group {
         display: grid;
+        align-content: start;
         gap: 6px;
         min-width: 0;
         padding: 6px;
@@ -1086,34 +1051,7 @@
         border-color: var(--red);
       }
 
-      .mode[aria-pressed="true"] {
-        color: var(--text);
-        background: var(--canvas);
-        border-color: var(--border);
-        box-shadow: var(--control-shadow);
-      }
-
-      .mode[aria-pressed="true"]::before {
-        content: "✓ ";
-      }
-
-      /*
-       * IMP-218 — Semantic Advantage and Disadvantage presentation.
-       * Pair colour with the existing labels, checkmark, and retained text so
-       * mode remains understandable without relying on colour alone.
-       */
-      .mode[data-mode="advantage"][aria-pressed="true"] {
-        color: var(--green);
-        background: var(--green-soft);
-        border-color: var(--green);
-      }
-
-      .mode[data-mode="disadvantage"][aria-pressed="true"] {
-        color: var(--red);
-        background: var(--red-soft);
-        border-color: var(--red);
-      }
-
+      /* IMP-218 — Retained-result mode styling (vantagem/desvantagem). */
       .roll-value.retained-advantage,
       .retained-note.retained-advantage {
         color: var(--green);
@@ -1157,23 +1095,12 @@
         border-color: var(--muted);
       }
 
-      .modifier-input:hover {
-        border-color: var(--muted);
-      }
-
-      /* IMP-253 — Show the Formula modifier target without moving its caret. */
-      .group-modifier-row .modifier-input[data-formula-caret-active="true"] {
-        background: var(--blue-soft);
-        border-color: var(--blue);
-        box-shadow: var(--focus);
-      }
-
       .quantity:invalid:not(:disabled) {
         background: var(--red-soft);
         border-color: var(--red);
       }
 
-      .modifier-input[aria-invalid="true"] {
+      .formula-input[aria-invalid="true"] {
         background: var(--red-soft);
         border-color: var(--red);
       }
@@ -1206,19 +1133,14 @@
           padding: var(--space-2) 0;
         }
 
-        /* Keep the open rail clear of the first die row at narrow widths. */
+        /* Keep the open rail clear of the dice at narrow widths (horizontal only,
+           so opening the rail never changes the embed height). */
         body.rail-open .main {
-          padding-top: 40px;
           padding-left: 40px;
         }
 
         .control-grid {
           grid-template-columns: 1fr;
-        }
-
-        .active-group-strip {
-          grid-template-columns: minmax(0, 1fr) auto;
-          gap: var(--space-2);
         }
 
         .workspace-note {
@@ -1235,6 +1157,11 @@
       }
 
       @media (max-width: 420px) {
+        :root {
+          /* Resultado (88px) + espaço + total empilhado embaixo. */
+          --result-body-height: 138px;
+        }
+
         .roller-panel {
           padding: var(--space-2);
         }
@@ -1274,6 +1201,7 @@
 
         .result-body:has(.formula-results) {
           grid-template-columns: 1fr;
+          grid-template-rows: minmax(0, 1fr) auto;
         }
 
         .result-body:has(.formula-results) .total {
@@ -1297,25 +1225,7 @@
         }
       }
 
-      @media (max-width: 400px) {
-        .active-group-strip {
-          grid-template-columns: 1fr;
-        }
-
-        .mode-controls {
-          justify-self: start;
-        }
-      }
-
       @media (max-width: 360px) {
-        .active-group-strip {
-          grid-template-columns: 1fr;
-        }
-
-        .mode-controls {
-          justify-self: start;
-        }
-
         .picker {
           grid-template-columns: repeat(3, minmax(44px, 1fr));
         }
@@ -1330,7 +1240,6 @@
          ========================================================================== */
       button:focus-visible,
       .quantity:focus-visible,
-      .modifier-input:focus-visible,
       .formula-input:focus-visible {
         outline: none;
         border-color: var(--blue);
@@ -1541,76 +1450,6 @@
               <span class="die-label">d100</span>
             </button>
           </div>
-          <div
-            class="active-group-strip"
-            id="poolBar"
-            aria-label="Controles do grupo de dados selecionado"
-            hidden
-          >
-            <div class="group-modifier-row">
-              <div class="modifier-copy">
-                <label for="groupModifier">Modificador</label>
-                <p class="sr-only" id="groupModifierHint">
-                  Apenas o dado selecionado · vazio vale 0
-                </p>
-                <p
-                  class="field-error"
-                  id="groupModifierError"
-                  role="alert"
-                  hidden
-                >
-                  Use um número inteiro, como 2 ou −1.
-                </p>
-              </div>
-              <input
-                class="modifier-input"
-                id="groupModifier"
-                type="text"
-                value=""
-                placeholder="0"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-                aria-invalid="false"
-                aria-label="Modificador do grupo de dados selecionado"
-                title="Modificador apenas para o grupo de dados selecionado"
-                aria-describedby="groupModifierHint groupModifierError"
-                disabled
-              />
-            </div>
-            <div class="mode-row">
-              <div class="sr-only">
-                <b id="modeLabel">Vantagem ou Desvantagem do dado selecionado</b>
-                <p id="modeHint">
-                  Nenhum selecionado significa Normal. O modo acompanha o dado selecionado.
-                </p>
-              </div>
-              <div
-                class="mode-controls"
-                role="group"
-                aria-labelledby="modeLabel"
-                aria-describedby="modeHint"
-              >
-                <button
-                  class="mode"
-                  data-mode="advantage"
-                  aria-label="Vantagem"
-                  title="Vantagem para o dado selecionado; selecione novamente para voltar ao Normal"
-                  aria-pressed="false"
-                >
-                  VANT</button
-                ><button
-                  class="mode"
-                  data-mode="disadvantage"
-                  aria-label="Desvantagem"
-                  title="Desvantagem para o dado selecionado; selecione novamente para voltar ao Normal"
-                  aria-pressed="false"
-                >
-                  DESV
-                </button>
-              </div>
-            </div>
-          </div>
           <form class="formula-panel" id="formulaForm" novalidate>
             <div class="formula-toolbar">
               <div class="formula-copy">
@@ -1702,8 +1541,7 @@
         const allowed = [4, 6, 8, 10, 12, 20, 100],
           maxQuantity = 100;
         // DOM references.
-        const buttons = [...document.querySelectorAll(".die")],
-          modeButtons = [...document.querySelectorAll(".mode")];
+        const buttons = [...document.querySelectorAll(".die")];
         const settingsTrigger = document.querySelector("#settingsTrigger"),
           settingsFlyout = document.querySelector("#settingsFlyout"),
           firstSettingsControl = document.querySelector("#rollAnimationSoon"),
@@ -1717,10 +1555,7 @@
           modifierBreakdown = document.querySelector("#modifierBreakdown"),
           badge = document.querySelector("#activeBadge"),
           status = document.querySelector("#status"),
-          poolBar = document.querySelector("#poolBar"),
           clearPoolButton = document.querySelector("#clearPool"),
-          groupModifierInput = document.querySelector("#groupModifier"),
-          groupModifierError = document.querySelector("#groupModifierError"),
           formulaForm = document.querySelector("#formulaForm"),
           formulaInput = document.querySelector("#formula"),
           formulaRollButton = document.querySelector("#formulaRollButton"),
@@ -1783,39 +1618,10 @@
         function modeName(value) {
           return modeNames[value] || value;
         }
-        function modeTitle() {
-          const name = modeName(mode);
-          return name[0].toUpperCase() + name.slice(1);
-        }
         function formatSigned(value) {
           if (value > 0) return "+" + value;
           if (value < 0) return "−" + Math.abs(value);
           return "0";
-        }
-        function parseGroupModifier() {
-          const raw = groupModifierInput.value.trim();
-          if (raw === "")
-            return { valid: true, value: 0, showBreakdown: false };
-          if (!/^[+-]?\d+$/.test(raw))
-            return { valid: false, value: 0, showBreakdown: false };
-          const value = Number(raw);
-          return {
-            valid: Number.isSafeInteger(value),
-            value,
-            showBreakdown: value !== 0,
-          };
-        }
-        function setGroupModifierValidation(valid) {
-          groupModifierInput.setAttribute("aria-invalid", String(!valid));
-          groupModifierError.hidden = valid;
-        }
-        let formulaModifierCaretActive = false;
-        function setFormulaModifierHighlight(active) {
-          formulaModifierCaretActive = active;
-          groupModifierInput.setAttribute(
-            "data-formula-caret-active",
-            String(active),
-          );
         }
         /*
          * IMP-248 — A plus followed by a valid dice token starts the next
@@ -2283,7 +2089,6 @@
         }
         function refreshControls() {
           const entries = poolEntries();
-          const activeGroup = formulaGroups[activeGroupIndex];
           buttons.forEach((button) => {
             const die = Number(button.dataset.sides);
             const count = pool[die];
@@ -2305,24 +2110,6 @@
             );
             button.querySelector(".die-count").textContent = String(count);
           });
-          modeButtons.forEach((button) => {
-            button.setAttribute(
-              "aria-pressed",
-              String(button.dataset.mode === mode),
-            );
-            button.disabled = !activeGroup;
-          });
-          groupModifierInput.disabled = !activeGroup;
-          groupModifierInput.setAttribute(
-            "data-formula-caret-active",
-            String(formulaModifierCaretActive && Boolean(activeGroup)),
-          );
-          groupModifierInput.value =
-            activeGroup && activeGroup.modifierValue
-              ? formatFormulaModifier(activeGroup.modifierValue)
-              : "";
-          setGroupModifierValidation(true);
-          poolBar.hidden = entries.length === 0;
           badge.textContent = sides
             ? "Ativo · d" + sides
             : entries.length
@@ -2429,15 +2216,6 @@
                   selectionStart >= span.start && selectionEnd <= span.end,
               )
             : -1;
-          const modifierSpan = spans?.find(
-            (span) =>
-              span.modifierStart !== null &&
-              selectionStart >= span.modifierStart &&
-              selectionEnd <= span.modifierCaretEnd,
-          );
-          setFormulaModifierHighlight(
-            parseFormula().valid && Boolean(modifierSpan),
-          );
           if (nextIndex === activeGroupIndex) return;
           activeGroupIndex = nextIndex;
           if (nextIndex >= 0) {
@@ -2623,66 +2401,15 @@
           activeGroupIndex = -1;
           sides = null;
           mode = "normal";
-          groupModifierInput.value = "";
           persistPool();
           localStorage.removeItem("dice-roller.selected-die");
           localStorage.setItem("dice-roller.mode", mode);
           formulaInput.value = "";
-          setFormulaModifierHighlight(false);
           persistSharedFormula("");
-          setGroupModifierValidation(true);
           setFormulaValidation(true);
           refreshControls();
           clearRoll();
           status.textContent = "Fórmula e botões de dados limpos.";
-        }
-        function setMode(next) {
-          if (!sides || !pool[sides]) return;
-          /*
-           * IMP-228 — Normal is implicit. Advantage and Disadvantage are
-           * independent toggles: selecting either targets the current active
-           * die, while selecting the active mode again returns to Normal.
-           */
-          mode =
-            ["advantage", "disadvantage"].includes(next) && next !== mode
-              ? next
-              : "normal";
-          if (activeGroupIndex < 0 || formulaGroups[activeGroupIndex]?.sides !== sides) {
-            for (let index = formulaGroups.length - 1; index >= 0; index -= 1) {
-              if (formulaGroups[index].sides === sides) {
-                activeGroupIndex = index;
-                break;
-              }
-            }
-          }
-          if (activeGroupIndex >= 0) {
-            formulaGroups[activeGroupIndex].mode =
-              mode === "normal" ? null : mode;
-            if (
-              mode !== "normal" &&
-              formulaGroups[activeGroupIndex].quantity === 1
-            ) {
-              formulaGroups[activeGroupIndex].quantity = 2;
-              pool[sides] = formulaGroups
-                .filter((group) => group.sides === sides)
-                .reduce((sum, group) => sum + group.quantity, 0);
-              persistPool();
-            }
-          }
-          localStorage.setItem("dice-roller.mode", mode);
-          refreshControls();
-          syncFormulaFromClicker();
-          clearRoll();
-          status.textContent =
-            mode === "normal"
-              ? "Rolagem normal selecionada."
-              : modeTitle() +
-                " selecionada: role " +
-                pool[sides] +
-                (pool[sides] === 1 ? " dado" : " dados") +
-                " do d" + sides + " ativo e mantenha o valor " +
-                (mode === "advantage" ? "maior" : "menor") +
-                ".";
         }
         function secureRoll(max) {
           if (!globalThis.crypto?.getRandomValues)
@@ -2878,43 +2605,10 @@
             decrementDie(Number(b.dataset.sides));
           }),
         );
-        modeButtons.forEach((b) =>
-          b.addEventListener("click", () => setMode(b.dataset.mode)),
-        );
-        groupModifierInput.addEventListener("input", () => {
-          const groupModifier = parseGroupModifier();
-          setGroupModifierValidation(groupModifier.valid);
-          if (!groupModifier.valid) {
-            status.textContent =
-              "O modificador do grupo deve ser um número inteiro com sinal. Nada foi alterado.";
-            return;
-          }
-          const activeGroup = formulaGroups[activeGroupIndex];
-          if (!activeGroup) return;
-          activeGroup.modifierValue = groupModifier.value;
-          syncFormulaFromClicker();
-          refreshControls();
-          clearRoll();
-          status.textContent = groupModifier.showBreakdown
-            ? "Modificador do grupo d" +
-              activeGroup.sides +
-              " ativo definido como " +
-              formatSigned(groupModifier.value) +
-              ". Fórmula atualizada para " +
-              formulaInput.value +
-              "."
-            : "Modificador do grupo ativo removido. Fórmula atualizada.";
-        });
-        groupModifierInput.addEventListener("keydown", (event) => {
-          if (event.key !== "Enter") return;
-          event.preventDefault();
-          rollFormula();
-        });
         formulaInput.addEventListener("input", () => {
           const formula = parseFormula();
           setFormulaValidation(formula.valid, formula.message);
           if (!formula.valid) {
-            setFormulaModifierHighlight(false);
             const draft = parseIncompleteFormulaDraft();
             if (draft.recognized) {
               applyIncompleteFormulaDraftToClicker(draft);
@@ -2940,7 +2634,6 @@
         );
         document.addEventListener("selectionchange", syncSelectionFromCaret);
         formulaInput.addEventListener("blur", () => {
-          setFormulaModifierHighlight(false);
           if (preserveFormulaOnNextBlur) {
             preserveFormulaOnNextBlur = false;
             return;
