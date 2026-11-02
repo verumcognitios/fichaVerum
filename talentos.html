@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/* =====================================================
+   CORES (mesmo padrão do módulo de Condições / Notion)
+   ===================================================== */
+:root {
+    color-scheme: light dark;
+    --bg: #191919;
+    --border: #2f2f2f;
+    --text: #ffffff;
+    --text-soft: #9b9b9b;
+    --field: #202020;
+    --card: rgba(255, 255, 255, 0.03);
+    --hover: #2a2a2a;
+    --danger: #ff4b4b;
+
+    /* Cores de texto do Notion (modo escuro) */
+    --c-padrao: #ffffff;
+    --c-cinza: #979a9b;
+    --c-marrom: #937264;
+    --c-laranja: #ffa344;
+    --c-amarelo: #ffdc49;
+    --c-verde: #4dab9a;
+    --c-azul: #529cca;
+    --c-roxo: #9a6dd7;
+    --c-rosa: #e255a1;
+    --c-vermelho: #ff7369;
+}
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #ffffff;
+        --border: #e3e2e0;
+        --text: #191919;
+        --text-soft: #787774;
+        --field: #f7f6f3;
+        --card: rgba(0, 0, 0, 0.02);
+        --hover: #efeeeb;
+
+        /* Cores de texto do Notion (modo claro) */
+        --c-padrao: #191919;
+        --c-cinza: #787774;
+        --c-marrom: #9f6b53;
+        --c-laranja: #d9730d;
+        --c-amarelo: #cb912f;
+        --c-verde: #448361;
+        --c-azul: #337ea9;
+        --c-roxo: #9065b0;
+        --c-rosa: #c14c8a;
+        --c-vermelho: #d44c47;
+    }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    background: var(--bg) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* O módulo preenche toda a altura do iframe;
+   quem rola é a lista de talentos, não a página. */
+.status-container {
+    width: 100%;
+    height: 100%;
+    padding: 1px;
+}
+
+.status {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px 6px;
+}
+
+/* =====================================================
+   CABEÇALHO
+   ===================================================== */
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    color: var(--text);
+    flex-shrink: 0;
+}
+.status-header svg { width: 18px; height: 18px; flex-shrink: 0; }
+.status-name { font-size: 14px; font-weight: bold; letter-spacing: 0.3px; }
+
+.btn {
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text);
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn:hover { background: var(--hover); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn-add { margin-left: auto; }
+
+/* =====================================================
+   ÁREA COM ROLAGEM
+   ===================================================== */
+.scroll-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+.scroll-area::-webkit-scrollbar { width: 6px; }
+.scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.empty {
+    font-size: 11px;
+    color: var(--text-soft);
+    padding: 4px 0;
+}
+
+/* =====================================================
+   FORMULÁRIO (novo / editar)
+   ===================================================== */
+.form {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+}
+.form.open { display: flex; }
+
+.field {
+    width: 100%;
+    background: var(--field);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.field::placeholder { color: var(--text-soft); }
+.field:focus { border-color: #555555; }
+textarea.field { min-height: 70px; resize: vertical; line-height: 1.5; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    padding: 0;
+}
+.swatch.selected { outline: 2px solid var(--text-soft); outline-offset: 2px; }
+
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* =====================================================
+   CARDS DE TALENTO
+   ===================================================== */
+.talent-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+.talent-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+/* Título: 2px maior que a descrição (12px → 14px) */
+.talent-title {
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.3;
+    word-break: break-word;
+}
+.talent-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+.icon-btn {
+    cursor: pointer;
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    transition: opacity 0.15s;
+}
+.icon-btn:hover { opacity: 0.7; }
+.icon-btn.danger { color: var(--danger); font-size: 16px; font-weight: bold; }
+.icon-btn.confirm { color: var(--danger); font-size: 11px; font-weight: bold; }
+
+.talent-desc {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    font-style: italic;            /* remova esta linha para texto normal */
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+</style>
+</head>
+<body>
+
+<div class="status-container">
+    <div class="status">
+        <div class="status-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3l9 16H3L12 3z"/>
+            </svg>
+            <span class="status-name">TALENTOS</span>
+            <button class="btn btn-add" id="btnAdd">+ Novo talento</button>
+        </div>
+
+        <div class="scroll-area" id="scrollArea">
+            <div class="form" id="form">
+                <input type="text" id="fTitulo" class="field" placeholder="Título do talento" autocomplete="off">
+                <div class="swatches" id="swatches"></div>
+                <textarea id="fDesc" class="field" placeholder="Descrição"></textarea>
+                <div class="form-actions">
+                    <button class="btn" id="btnCancel">Cancelar</button>
+                    <button class="btn" id="btnSave">Salvar</button>
+                </div>
+            </div>
+            <div id="list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+/* =====================================================
+   CORES DISPONÍVEIS PARA O TÍTULO
+   Para adicionar uma cor: crie a variável --c-nome no CSS
+   (modo escuro e claro) e adicione { id: "nome", nome: "Nome" }.
+   ===================================================== */
+const CORES = [
+    { id: "padrao",   nome: "Padrão" },
+    { id: "cinza",    nome: "Cinza" },
+    { id: "marrom",   nome: "Marrom" },
+    { id: "laranja",  nome: "Laranja" },
+    { id: "amarelo",  nome: "Amarelo" },
+    { id: "verde",    nome: "Verde" },
+    { id: "azul",     nome: "Azul" },
+    { id: "roxo",     nome: "Roxo" },
+    { id: "rosa",     nome: "Rosa" },
+    { id: "vermelho", nome: "Vermelho" }
+];
+
+/* =====================================================
+   FIREBASE (mesma configuração do módulo de Condições)
+   ===================================================== */
+const firebaseConfig = {
+    apiKey: "AIzaSyD2qEEAPbzP1RFVnx2ijnEyCXB3VWzfz-8",
+    authDomain: "ficha-verum.firebaseapp.com",
+    databaseURL: "https://ficha-verum-default-rtdb.firebaseio.com",
+    projectId: "ficha-verum",
+    storageBucket: "ficha-verum.firebasestorage.app",
+    messagingSenderId: "281172832426",
+    appId: "1:281172832426:web:85442662439544144fa0d3"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Caminho dinâmico para cada jogador: ...?player=nome
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('player') || 'jogador_teste';
+const dbRef = ref(db, `fichas/${playerName}_talentos`);
+
+/* =====================================================
+   ESTADO
+   ===================================================== */
+let talentos = [];          // [{ id, titulo, desc, cor }]
+let isInitialized = false;
+let editingId = null;       // null = criando novo
+let selectedColor = "padrao";
+let pendingDeleteId = null;
+
+const $ = (id) => document.getElementById(id);
+const form = $("form"), list = $("list");
+const fTitulo = $("fTitulo"), fDesc = $("fDesc");
+
+onValue(dbRef, (snapshot) => {
+    const data = snapshot.val();
+    talentos = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+    render();
+    isInitialized = true;
+});
+
+function save() {
+    if (!isInitialized) return;
+    set(dbRef, talentos);
+}
+
+/* =====================================================
+   RENDERIZAÇÃO
+   ===================================================== */
+function render() {
+    list.innerHTML = "";
+
+    if (talentos.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Nenhum talento ainda. Clique em “+ Novo talento”.";
+        list.appendChild(empty);
+        return;
+    }
+
+    talentos.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "talent-card";
+
+        const head = document.createElement("div");
+        head.className = "talent-head";
+
+        const title = document.createElement("div");
+        title.className = "talent-title";
+        title.textContent = t.titulo;
+        title.style.color = `var(--c-${t.cor || "padrao"})`;
+
+        const actions = document.createElement("div");
+        actions.className = "talent-actions";
+
+        const edit = document.createElement("button");
+        edit.className = "icon-btn";
+        edit.title = "Editar";
+        edit.textContent = "✎";
+        edit.addEventListener("click", () => openForm(t));
+
+        const del = document.createElement("button");
+        if (pendingDeleteId === t.id) {
+            del.className = "icon-btn confirm";
+            del.textContent = "Remover?";
+        } else {
+            del.className = "icon-btn danger";
+            del.title = "Remover";
+            del.textContent = "×";
+        }
+        del.addEventListener("click", () => {
+            if (pendingDeleteId === t.id) {
+                talentos = talentos.filter(x => x.id !== t.id);
+                pendingDeleteId = null;
+                save();
+                render();
+            } else {
+                pendingDeleteId = t.id;
+                render();
+                setTimeout(() => { pendingDeleteId = null; render(); }, 3000);
+            }
+        });
+
+        actions.append(edit, del);
+        head.append(title, actions);
+
+        const desc = document.createElement("div");
+        desc.className = "talent-desc";
+        desc.textContent = t.desc;
+
+        card.append(head, desc);
+        list.appendChild(card);
+    });
+}
+
+/* =====================================================
+   FORMULÁRIO
+   ===================================================== */
+function renderSwatches() {
+    const box = $("swatches");
+    box.innerHTML = "";
+    CORES.forEach(c => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "swatch" + (c.id === selectedColor ? " selected" : "");
+        b.style.background = `var(--c-${c.id})`;
+        b.title = c.nome;
+        b.addEventListener("click", () => { selectedColor = c.id; renderSwatches(); });
+        box.appendChild(b);
+    });
+}
+
+function openForm(talento) {
+    editingId = talento ? talento.id : null;
+    fTitulo.value = talento ? talento.titulo : "";
+    fDesc.value = talento ? talento.desc : "";
+    selectedColor = talento ? (talento.cor || "padrao") : "padrao";
+    renderSwatches();
+    form.classList.add("open");
+    $("scrollArea").scrollTop = 0;
+    fTitulo.focus();
+}
+
+function closeForm() {
+    form.classList.remove("open");
+    editingId = null;
+}
+
+$("btnAdd").addEventListener("click", () => openForm(null));
+$("btnCancel").addEventListener("click", closeForm);
+
+$("btnSave").addEventListener("click", () => {
+    const titulo = fTitulo.value.trim();
+    const desc = fDesc.value.trim();
+    if (!titulo) { fTitulo.focus(); return; }
+
+    if (editingId) {
+        talentos = talentos.map(t =>
+            t.id === editingId ? { ...t, titulo, desc, cor: selectedColor } : t
+        );
+    } else {
+        talentos.push({ id: String(Date.now()), titulo, desc, cor: selectedColor });
+    }
+    save();
+    render();
+    closeForm();
+});
+
+fTitulo.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); fDesc.focus(); }
+});
+</script>
+</body>
+</html>
