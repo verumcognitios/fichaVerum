@@ -5,62 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 /* =====================================================
-   CONFIGURAÇÃO GERAL E FUNDO
+   CORES (mesmo padrão dos callouts do Notion)
+   Escuro por padrão; claro quando o sistema/Notion for claro.
    ===================================================== */
 :root {
     color-scheme: light dark;
+    --bg: #191919;            /* fundo da página */
+    --border: #2f2f2f;        /* borda dos blocos */
+    --text: #ffffff;
+    --text-soft: #9b9b9b;
+    --field: #202020;         /* barra de pesquisa */
+    --card: rgba(255, 255, 255, 0.03);
+    --card-border: #2f2f2f;
+    --hover: #2a2a2a;
+    --danger: #ff4b4b;
 }
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #ffffff;
+        --border: #e3e2e0;
+        --text: #191919;
+        --text-soft: #787774;
+        --field: #f7f6f3;
+        --card: rgba(0, 0, 0, 0.02);
+        --card-border: #e3e2e0;
+        --hover: #efeeeb;
+    }
+}
+
+* { box-sizing: border-box; }
+
 html, body {
-    background-color: #191919 !important;
+    background: var(--bg) !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100%;
-    min-height: 100%;
     font-family: Arial, Helvetica, sans-serif;
 }
-@media (prefers-color-scheme: light) {
-    html, body {
-        background-color: #ffffff !important;
-    }
-}
-* {
-    box-sizing: border-box;
-}
 
+/* O bloco ocupa 100% da largura do iframe, sem recuo lateral,
+   para alinhar com as bordas dos blocos acima. */
 .status-container {
     width: 100%;
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 10px;
+    margin: 0;
+    padding: 1px; /* evita a borda ser cortada pelo iframe */
 }
 
 /* =====================================================
-   ESTILO DO BLOCO PRINCIPAL
+   BLOCO PRINCIPAL (callout)
    ===================================================== */
 .status {
     width: 100%;
-    background: #373737;
-    border-radius: 9px;
-    padding: 17px 17px 16px;
-    margin-bottom: 12px;
-    --status-color: #ffffff;
-}
-@media (prefers-color-scheme: light) {
-    .status { background: #eeeeee; }
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px 18px;
 }
 
-/* =====================================================
-   CABEÇALHO DO BLOCO
-   ===================================================== */
 .status-header {
     display: flex;
     align-items: center;
-    gap: 7px;
-    margin-bottom: 15px;
-    color: var(--status-color);
+    gap: 8px;
+    margin-bottom: 14px;
+    color: var(--text);
+}
+.status-header svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
 }
 .status-name {
-    color: var(--status-color);
     font-size: 14px;
     font-weight: bold;
     letter-spacing: 0.3px;
@@ -71,30 +85,21 @@ html, body {
    ===================================================== */
 .search-wrapper {
     position: relative;
-    margin-bottom: 15px;
 }
-
 .condition-input {
     width: 100%;
-    background: #242424;
-    border: 1px solid transparent;
-    color: #ffffff;
+    background: var(--field);
+    border: 1px solid var(--border);
+    color: var(--text);
     padding: 9px 12px;
     border-radius: 6px;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: inherit;
     font-size: 12px;
     outline: none;
     transition: border-color 0.2s;
 }
-.condition-input:focus {
-    border-color: #555555;
-}
-@media (prefers-color-scheme: light) {
-    .condition-input {
-        background: #d8d8d8;
-        color: #191919;
-    }
-}
+.condition-input::placeholder { color: var(--text-soft); }
+.condition-input:focus { border-color: #555555; }
 
 /* =====================================================
    LISTA DE SUGESTÕES (DROPDOWN)
@@ -104,37 +109,34 @@ html, body {
     top: 100%;
     left: 0;
     right: 0;
-    background: #2a2a2a;
-    border-radius: 6px;
     margin-top: 5px;
     max-height: 150px;
     overflow-y: auto;
     z-index: 100;
     display: none;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    border: 1px solid #444;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 .suggestion-item {
     padding: 10px 12px;
     font-size: 12px;
-    color: #dddddd;
+    color: var(--text);
     cursor: pointer;
-    border-bottom: 1px solid #3a3a3a;
+    border-bottom: 1px solid var(--border);
 }
 .suggestion-item:last-child { border-bottom: none; }
-.suggestion-item:hover {
-    background: #3a3a3a;
-    color: #ffffff;
-}
+.suggestion-item:hover { background: var(--hover); }
 
 /* =====================================================
-   TOOLTIP FLUTUANTE GLOBAL (Ao pesquisar)
+   TOOLTIP FLUTUANTE (ao pesquisar)
    ===================================================== */
 .search-tooltip {
     position: fixed;
-    background: #191919;
-    color: #cccccc;
-    border: 1px solid #444;
+    background: var(--bg);
+    color: var(--text-soft);
+    border: 1px solid var(--border);
     padding: 10px 12px;
     border-radius: 6px;
     width: 260px;
@@ -143,82 +145,61 @@ html, body {
     z-index: 9999;
     display: none;
     pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-}
-@media (prefers-color-scheme: light) {
-    .search-tooltip {
-        background: #ffffff;
-        color: #333333;
-        border-color: #cccccc;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 /* =====================================================
-   CONDIÇÕES ATIVAS (BLOCOS SALVOS)
+   CONDIÇÕES ATIVAS
    ===================================================== */
 .active-conditions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
+.active-conditions:not(:empty) { margin-top: 14px; }
 
 .cond-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px 14px;
 }
-@media (prefers-color-scheme: light) {
-    .cond-card {
-        background: rgba(0, 0, 0, 0.03);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-    }
-}
-
 .cond-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
 }
-
 .cond-title {
     font-size: 11px;
     font-weight: bold;
-    color: #ffffff;
+    color: var(--text);
     letter-spacing: 0.5px;
 }
-@media (prefers-color-scheme: light) {
-    .cond-title { color: #191919; }
-}
-
 .cond-remove {
     cursor: pointer;
-    color: #ff4b4b;
+    color: var(--danger);
     font-size: 16px;
     font-weight: bold;
     line-height: 1;
-    transition: color 0.15s;
+    transition: opacity 0.15s;
 }
-.cond-remove:hover { color: #ff7676; }
-
+.cond-remove:hover { opacity: 0.7; }
 .cond-desc {
     font-size: 11px;
-    color: #aaaaaa;
-    line-height: 1.4;
-}
-@media (prefers-color-scheme: light) {
-    .cond-desc { color: #555555; }
+    color: var(--text-soft);
+    line-height: 1.5;
 }
 </style>
 </head>
 <body>
 
 <div class="status-container">
-
     <div class="status">
         <div class="status-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12h4l3-8 4 16 3-8h4"/>
+            </svg>
             <span class="status-name">CONDIÇÕES</span>
         </div>
 
@@ -227,10 +208,8 @@ html, body {
             <div id="suggestionsList" class="suggestions-list"></div>
         </div>
 
-        <div id="activeConditions" class="active-conditions">
-        </div>
+        <div id="activeConditions" class="active-conditions"></div>
     </div>
-
 </div>
 
 <div id="globalTooltip" class="search-tooltip"></div>
@@ -241,8 +220,20 @@ import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebase
 
 /* =====================================================
    BANCO DE DADOS DE CONDIÇÕES
-   Para adicionar mais condições, basta copiar o bloco 
-   entre { } e adicionar à lista, separando por vírgula.
+
+   PARA ADICIONAR UMA CONDIÇÃO NOVA:
+   1. Copie um bloco { ... } inteiro abaixo.
+   2. Cole logo depois do último bloco, colocando uma
+      vírgula depois do bloco anterior.
+   3. Troque o id (minúsculo, sem espaços/acentos, único),
+      o nome (aparece em maiúsculas) e a descrição.
+
+   Modelo:
+    {
+        id: "exemplo",
+        nome: "EXEMPLO",
+        desc: "Descrição da condição."
+    },
    ===================================================== */
 const conditionsDB = [
     {
@@ -257,7 +248,9 @@ const conditionsDB = [
     }
 ];
 
-// Configuração Firebase
+/* =====================================================
+   FIREBASE (não mexer)
+   ===================================================== */
 const firebaseConfig = {
     apiKey: "AIzaSyD2qEEAPbzP1RFVnx2ijnEyCXB3VWzfz-8",
     authDomain: "ficha-verum.firebaseapp.com",
@@ -287,6 +280,9 @@ const suggestionsList = document.getElementById("suggestionsList");
 const activeConditionsContainer = document.getElementById("activeConditions");
 const globalTooltip = document.getElementById("globalTooltip");
 
+// Ignora acentos e maiúsculas na pesquisa (ex: "paranoia" acha "paranóia")
+const normalize = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
 /* =====================================================
    FIREBASE SYNC
    ===================================================== */
@@ -306,7 +302,7 @@ function saveActiveConditions() {
    RENDERIZAR OS BLOCOS
    ===================================================== */
 function renderActiveConditions() {
-    activeConditionsContainer.innerHTML = ""; 
+    activeConditionsContainer.innerHTML = "";
 
     activeConditionsIds.forEach(id => {
         const condition = conditionsDB.find(c => c.id === id);
@@ -321,7 +317,7 @@ function renderActiveConditions() {
             </div>
             <div class="cond-desc">${condition.desc}</div>
         `;
-        
+
         activeConditionsContainer.appendChild(card);
     });
 
@@ -351,15 +347,15 @@ function removeCondition(id) {
    LÓGICA DA PESQUISA COM TOOLTIP FLUTUANTE
    ===================================================== */
 searchInput.addEventListener("input", function(e) {
-    const query = e.target.value.toLowerCase().trim();
-    
+    const query = normalize(e.target.value);
+
     if (query.length === 0) {
         suggestionsList.style.display = "none";
         return;
     }
 
-    const filtered = conditionsDB.filter(c => 
-        c.nome.toLowerCase().includes(query) && 
+    const filtered = conditionsDB.filter(c =>
+        normalize(c.nome).includes(query) &&
         !activeConditionsIds.includes(c.id)
     );
 
@@ -370,24 +366,23 @@ searchInput.addEventListener("input", function(e) {
             const item = document.createElement("div");
             item.className = "suggestion-item";
             item.textContent = c.nome;
-            
+
             item.addEventListener("mousemove", (event) => {
                 globalTooltip.textContent = c.desc;
                 globalTooltip.style.display = "block";
-                
+
                 let x = event.clientX + 15;
                 let y = event.clientY + 15;
-                
+
                 const rect = globalTooltip.getBoundingClientRect();
-                
+
                 if (x + rect.width > window.innerWidth) {
                     x = event.clientX - rect.width - 15;
                 }
-                
                 if (y + rect.height > window.innerHeight) {
                     y = event.clientY - rect.height - 15;
                 }
-                
+
                 globalTooltip.style.left = x + "px";
                 globalTooltip.style.top = y + "px";
             });
