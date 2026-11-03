@@ -83,9 +83,71 @@ html, body {
 /* =====================================================
    BARRA DE PESQUISA
    ===================================================== */
+.search-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
 .search-wrapper {
     position: relative;
+    flex: 1;
+    min-width: 0;
 }
+.btn-add {
+    width: 36px;
+    flex-shrink: 0;
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-add:hover { background: var(--hover); }
+
+/* Formulário de condição personalizada */
+.custom-form {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+.custom-form.open { display: flex; }
+.field {
+    width: 100%;
+    background: var(--field);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.field::placeholder { color: var(--text-soft); }
+.field:focus { border-color: #555555; }
+textarea.field { min-height: 64px; resize: vertical; line-height: 1.5; }
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn {
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text);
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn:hover { background: var(--hover); }
 .condition-input {
     width: 100%;
     background: var(--field);
@@ -203,9 +265,21 @@ html, body {
             <span class="status-name">CONDIÇÕES</span>
         </div>
 
-        <div class="search-wrapper">
-            <input type="text" id="conditionSearch" class="condition-input" placeholder="Pesquisar condição (ex: Abalado)..." autocomplete="off">
-            <div id="suggestionsList" class="suggestions-list"></div>
+        <div class="search-row">
+            <div class="search-wrapper">
+                <input type="text" id="conditionSearch" class="condition-input" placeholder="Pesquisar condição (ex: Abalado)..." autocomplete="off">
+                <div id="suggestionsList" class="suggestions-list"></div>
+            </div>
+            <button class="btn-add" id="btnAddCustom" title="Adicionar nova condição">+</button>
+        </div>
+
+        <div class="custom-form" id="customForm">
+            <input type="text" id="cNome" class="field" placeholder="Nome da condição" autocomplete="off">
+            <textarea id="cDesc" class="field" placeholder="Descrição"></textarea>
+            <div class="form-actions">
+                <button class="btn" id="cCancel">Cancelar</button>
+                <button class="btn" id="cSave">Adicionar</button>
+            </div>
         </div>
 
         <div id="activeConditions" class="active-conditions"></div>
@@ -272,7 +346,8 @@ const dbRef = ref(db, `fichas/${playerName}_condicoes`);
 /* =====================================================
    VARIÁVEIS DE CONTROLE
    ===================================================== */
-let activeConditionsIds = [];
+// Cada item é o id (texto) de uma condição do banco OU um objeto personalizado { id, nome, desc, custom: true }
+let activeConditions = [];
 let isInitialized = false;
 
 const searchInput = document.getElementById("conditionSearch");
@@ -288,49 +363,59 @@ const normalize = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLo
    ===================================================== */
 onValue(dbRef, (snapshot) => {
     const data = snapshot.val();
-    activeConditionsIds = data || [];
+    activeConditions = Array.isArray(data) ? data : (data ? Object.values(data) : []);
     renderActiveConditions();
     isInitialized = true;
 });
 
 function saveActiveConditions() {
     if (!isInitialized) return;
-    set(dbRef, activeConditionsIds);
+    set(dbRef, activeConditions);
 }
 
 /* =====================================================
    RENDERIZAR OS BLOCOS
    ===================================================== */
+const entryId = (e) => typeof e === "string" ? e : e.id;
+const entryData = (e) => typeof e === "string" ? conditionsDB.find(c => c.id === e) : e;
+const hasCondition = (id) => activeConditions.some(e => entryId(e) === id);
+
 function renderActiveConditions() {
     activeConditionsContainer.innerHTML = "";
 
-    activeConditionsIds.forEach(id => {
-        const condition = conditionsDB.find(c => c.id === id);
+    activeConditions.forEach(entry => {
+        const condition = entryData(entry);
         if (!condition) return;
 
         const card = document.createElement("div");
         card.className = "cond-card";
-        card.innerHTML = `
-            <div class="cond-card-header">
-                <span class="cond-title">${condition.nome}</span>
-                <span class="cond-remove" data-id="${condition.id}">×</span>
-            </div>
-            <div class="cond-desc">${condition.desc}</div>
-        `;
 
+        const header = document.createElement("div");
+        header.className = "cond-card-header";
+
+        const title = document.createElement("span");
+        title.className = "cond-title";
+        title.textContent = condition.nome;
+
+        const remove = document.createElement("span");
+        remove.className = "cond-remove";
+        remove.textContent = "×";
+        remove.addEventListener("click", () => removeCondition(entryId(entry)));
+
+        header.append(title, remove);
+
+        const desc = document.createElement("div");
+        desc.className = "cond-desc";
+        desc.textContent = condition.desc;
+
+        card.append(header, desc);
         activeConditionsContainer.appendChild(card);
-    });
-
-    document.querySelectorAll(".cond-remove").forEach(btn => {
-        btn.addEventListener("click", function(e) {
-            removeCondition(e.target.getAttribute("data-id"));
-        });
     });
 }
 
 function addCondition(id) {
-    if (!activeConditionsIds.includes(id)) {
-        activeConditionsIds.push(id);
+    if (!hasCondition(id)) {
+        activeConditions.push(id);
         saveActiveConditions();
     }
     searchInput.value = "";
@@ -339,9 +424,49 @@ function addCondition(id) {
 }
 
 function removeCondition(id) {
-    activeConditionsIds = activeConditionsIds.filter(condId => condId !== id);
+    activeConditions = activeConditions.filter(e => entryId(e) !== id);
     saveActiveConditions();
 }
+
+/* =====================================================
+   CONDIÇÃO PERSONALIZADA (botão +)
+   ===================================================== */
+const customForm = document.getElementById("customForm");
+const cNome = document.getElementById("cNome");
+const cDesc = document.getElementById("cDesc");
+
+function openCustomForm() {
+    customForm.classList.add("open");
+    suggestionsList.style.display = "none";
+    cNome.focus();
+}
+
+function closeCustomForm() {
+    customForm.classList.remove("open");
+    cNome.value = "";
+    cDesc.value = "";
+}
+
+document.getElementById("btnAddCustom").addEventListener("click", () => {
+    if (customForm.classList.contains("open")) closeCustomForm();
+    else openCustomForm();
+});
+document.getElementById("cCancel").addEventListener("click", closeCustomForm);
+
+document.getElementById("cSave").addEventListener("click", () => {
+    const nome = cNome.value.trim().toUpperCase();
+    const desc = cDesc.value.trim();
+    if (!nome) { cNome.focus(); return; }
+
+    activeConditions.push({ id: "custom_" + Date.now(), nome, desc, custom: true });
+    saveActiveConditions();
+    closeCustomForm();
+});
+
+cNome.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); cDesc.focus(); }
+    if (e.key === "Escape") closeCustomForm();
+});
 
 /* =====================================================
    LÓGICA DA PESQUISA COM TOOLTIP FLUTUANTE
@@ -356,7 +481,7 @@ searchInput.addEventListener("input", function(e) {
 
     const filtered = conditionsDB.filter(c =>
         normalize(c.nome).includes(query) &&
-        !activeConditionsIds.includes(c.id)
+        !hasCondition(c.id)
     );
 
     suggestionsList.innerHTML = "";
