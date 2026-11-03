@@ -133,7 +133,7 @@ html, body {
 /* =====================================================
    INVENTÁRIO, GRID E AVISOS
    ===================================================== */
-.inventory-layout { display: flex; gap: 15px; align-items: flex-start; flex-wrap: nowrap; }
+.inventory-layout { display: flex; gap: 15px; align-items: flex-start; flex-wrap: nowrap; justify-content: space-between; }
 .inventory-box {
     background: var(--card); padding: 12px; border-radius: 8px;
     border: 1px solid var(--border); width: fit-content; flex-shrink: 0;
@@ -188,7 +188,7 @@ html, body {
    ===================================================== */
 .weightless-panel {
     background: var(--card); padding: 12px; border-radius: 8px; border: 1px solid var(--border);
-    width: 280px; flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto;
+    width: 300px; flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto;
 }
 .weightless-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px; }
 .weightless-header h4 { margin: 0; font-size: 11px; color: #aaa; text-transform: uppercase; }
@@ -210,6 +210,9 @@ html, body {
     position: relative; overflow: visible;
 }
 .inventory-item:hover { z-index: 20; }
+.inventory-item { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.item-rotate { cursor: pointer; font-size: 14px; font-weight: bold; line-height: 1; color: #fff; padding: 0 2px; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
+.item-rotate:hover { color: #88ccff; }
 .inventory-item:active { transform: scale(0.98); }
 .inventory-item.selected { z-index: 50; }
 .inventory-item.selected.valid { box-shadow: 0 0 14px 2px rgba(39, 184, 121, 0.8); border-color: #27b879 !important; transform: scale(1.02); }
@@ -292,7 +295,7 @@ html, body {
         <div id="inventoriesContainer"></div>
 
         <div style="font-size: 11px; color: #888; margin-top: 15px; line-height: 1.4;">
-            <strong>Controles:</strong> Clique para pegar (ou segure o <strong>Botão Dir.</strong> sobre o item e arraste). Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> para mover. <kbd>R</kbd> ou <strong>Botão Dir.</strong> gira. <kbd>C</kbd> copia o item. ESC cancela<br>
+            <strong>Controles:</strong> Clique para pegar, ou segure o item e arraste para mover. Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> para mover. <kbd>R</kbd> ou o botão ↻ gira. <kbd>C</kbd> copia o item. ESC cancela<br>
         </div>
     </div>
 </div>
@@ -307,7 +310,7 @@ html, body {
         <input type="number" id="configRows" min="4" max="20" value="6">
         <div class="modal-actions">
             <button id="btnCancelConfig" class="btn-cancel" type="button">Cancelar</button>
-            <button id="btnSaveConfig" class="btn-add" type="button">Salvar Config.</button>
+            <button style="font-size: 12px;" id="btnSaveConfig" class="btn-add" type="button">Salvar</button>
         </div>
     </div>
 </div>
@@ -912,6 +915,7 @@ function renderAll() {
                 <div class="item-footer">
                     <div class="item-actions">
                         <span class="item-edit" data-id="${item.id}" title="Editar / Excluir">✎</span>
+                        ${activeItemPreview && activeItemPreview.id === item.id ? '<span class="item-rotate" title="Girar (R)">↻</span>' : ''}
                     </div>
                     <span class="item-transfer" data-id="${item.id}" title="Transferir para outra bolsa">${transferSvg}</span>
                 </div>
@@ -950,6 +954,12 @@ function renderAll() {
         });
         
         itemEl.querySelector(".item-edit").addEventListener("click", (e) => { e.stopPropagation(); openEditModal(item.id); });
+        const rotBtn = itemEl.querySelector(".item-rotate");
+        if (rotBtn) rotBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const t = activeItemPreview.w; activeItemPreview.w = activeItemPreview.h; activeItemPreview.h = t;
+            renderAll();
+        });
         itemEl.querySelector(".item-transfer").addEventListener("click", (e) => { e.stopPropagation(); openTransferModal(item.id); });
         
         if (renderGrid === 'main' || !equippedGrid) mainGrid.appendChild(itemEl);
@@ -1056,16 +1066,7 @@ function canPlaceItem(id, targetX, targetY, w, h, targetGrid = 'main') {
     return true;
 }
 
-document.addEventListener("contextmenu", (e) => {
-    if (activeItemPreview) {
-        e.preventDefault();
-        let temp = activeItemPreview.w;
-        activeItemPreview.w = activeItemPreview.h;
-        activeItemPreview.h = temp;
-        renderAll();
-    }
-});
-
+// Girar: tecla R ou botão ↻ no item selecionado
 /* =====================================================
    TECLADO E CLIQUES
    ===================================================== */
@@ -1166,18 +1167,29 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* =====================================================
-   ARRASTAR COM O BOTÃO DIREITO (segurar, mover e soltar)
-   Reaproveita activeItemPreview e canPlaceItem: ao soltar em
-   posição válida grava; em posição inválida o item volta.
-   Clique direito sem arrastar continua girando o item.
+   MOVER SEGURANDO (mouse com botão esquerdo, toque ou caneta)
+   Segure o item e arraste; ao soltar em posição válida grava, em
+   posição inválida o item volta. Toque/clique curto continua
+   pegando e soltando como antes.
    ===================================================== */
-let rd = null, suppressCtxUntil = 0;
+let rd = null, suppressClickUntil = 0, suppressCtxUntil = 0;
 
 function gridPitch() {
     const tab = getCurrentTab(), g = document.getElementById("mainGridContainer");
     if (!tab || !g) return CELL_SIZE + CELL_GAP;
     const cols = tab.config.cols;
     return (g.getBoundingClientRect().width / (cols * CELL_SIZE + (cols - 1) * CELL_GAP)) * (CELL_SIZE + CELL_GAP);
+}
+
+function commitPreview() {
+    const p = activeItemPreview, tab = getCurrentTab();
+    const it = p && tab && tab.items.find(i => i.id === p.id);
+    if (it && canPlaceItem(p.id, p.x, p.y, p.w, p.h, p.grid)) {
+        it.x = p.x; it.y = p.y; it.w = p.w; it.h = p.h; it.grid = p.grid;
+        saveState();
+        return true;
+    }
+    return false;
 }
 
 function dragTo(cx, cy) {
@@ -1200,38 +1212,34 @@ function dragTo(cx, cy) {
 
 function endDrag(drop) {
     if (!rd) return;
-    const was = rd.dragging;
+    const d = rd;
     rd = null;
-    if (!was) return;
-    suppressCtxUntil = Date.now() + 500;
-    const p = activeItemPreview, tab = getCurrentTab();
-    const it = p && tab && tab.items.find(i => i.id === p.id);
-    if (drop && it && canPlaceItem(p.id, p.x, p.y, p.w, p.h, p.grid)) {
-        it.x = p.x; it.y = p.y; it.w = p.w; it.h = p.h; it.grid = p.grid;
-        activeItemPreview = null;
-        saveState();
-    } else {
-        activeItemPreview = null;
-    }
+    if (!d.dragging) return;
+    try { document.body.releasePointerCapture(d.pid); } catch (_) {}
+    suppressClickUntil = Date.now() + 400;
+    suppressCtxUntil = Date.now() + 600;
+    if (drop) commitPreview();
+    activeItemPreview = null;
     renderAll();
 }
 
 document.addEventListener("pointerdown", (e) => {
-    if (e.pointerType !== "mouse" || e.button !== 2) return;
-    const el = e.target.closest(".inventory-item");
+    if (e.button !== 0 || !e.isPrimary) return;
+    const el = e.target.closest && e.target.closest(".inventory-item");
     if (!el || e.target.closest(".item-actions, .item-transfer")) return;
     const edit = el.querySelector(".item-edit");
     if (!edit) return;
-    rd = { id: edit.dataset.id, sx: e.clientX, sy: e.clientY, rect: el.getBoundingClientRect(), dragging: false };
+    rd = { id: edit.dataset.id, pid: e.pointerId, sx: e.clientX, sy: e.clientY, rect: el.getBoundingClientRect(), dragging: false };
 });
 
 document.addEventListener("pointermove", (e) => {
-    if (!rd) return;
-    if (!(e.buttons & 2)) { endDrag(true); return; }
+    if (!rd || e.pointerId !== rd.pid) return;
+    if (!(e.buttons & 1)) { endDrag(true); return; }
     if (!rd.dragging) {
         if (Math.hypot(e.clientX - rd.sx, e.clientY - rd.sy) < 6) return;
         const tab = getCurrentTab(), it = tab && tab.items.find(i => i.id === rd.id);
         if (!it) { rd = null; return; }
+        if (activeItemPreview && activeItemPreview.id !== it.id) commitPreview();
         if (!activeItemPreview || activeItemPreview.id !== it.id) {
             activeItemPreview = { id: it.id, x: it.x, y: it.y, w: it.w, h: it.h, grid: (it.grid === "equipped" && isMainTab(tab.id)) ? "equipped" : "main" };
         }
@@ -1239,18 +1247,24 @@ document.addEventListener("pointermove", (e) => {
         rd.offX = Math.min(Math.max(Math.floor((rd.sx - rd.rect.left) / pitch), 0), activeItemPreview.w - 1);
         rd.offY = Math.min(Math.max(Math.floor((rd.sy - rd.rect.top) / pitch), 0), activeItemPreview.h - 1);
         rd.dragging = true;
+        // Mantém os eventos chegando mesmo quando o item é redesenhado
+        try { document.body.setPointerCapture(e.pointerId); } catch (_) {}
     }
     dragTo(e.clientX, e.clientY);
 });
 
-document.addEventListener("pointerup", (e) => { if (e.button === 2) endDrag(true); });
+document.addEventListener("pointerup", (e) => { if (rd && e.pointerId === rd.pid) endDrag(true); });
 document.addEventListener("pointercancel", () => endDrag(false));
 window.addEventListener("blur", () => endDrag(false));
 
-// Evita o menu do navegador e o "girar" durante/depois do arrasto
+// Depois de arrastar, ignora o "clique" que o navegador dispara ao soltar
+document.addEventListener("click", (e) => {
+    if (Date.now() < suppressClickUntil) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+
+// Evita o menu de segurar (toque longo) sobre os itens
 document.addEventListener("contextmenu", (e) => {
-    if (Date.now() < suppressCtxUntil || (rd && rd.dragging)) { e.preventDefault(); e.stopImmediatePropagation(); }
-    else if (rd && e.target.closest(".inventory-item")) e.preventDefault();
+    if (rd || Date.now() < suppressCtxUntil) e.preventDefault();
 }, true);
 
 /* =====================================================
