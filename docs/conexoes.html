@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+    color-scheme: light dark;
+    --bg: #191919; --border: #2f2f2f; --text: #ffffff; --text-soft: #9b9b9b;
+    --field: #202020; --card: rgba(255,255,255,0.03); --hover: #2a2a2a; --danger: #ff4b4b;
+    --c-cinza: #979a9b; --c-verde: #4dab9a; --c-vermelho: #ff7369; --dot-empty: #555555;
+}
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #ffffff; --border: #e3e2e0; --text: #191919; --text-soft: #787774;
+        --field: #f7f6f3; --card: rgba(0,0,0,0.02); --hover: #efeeeb;
+        --c-cinza: #787774; --c-verde: #448361; --c-vermelho: #d44c47; --dot-empty: #bdbcb8;
+    }
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg) !important; margin: 0 !important; padding: 0 !important; width: 100%; height: 100%; font-family: Arial, Helvetica, sans-serif; }
+.status-container { width: 100%; height: 100%; padding: 1px; }
+.status { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px 6px; }
+
+/* Cabeçalho */
+.status-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--text); flex-shrink: 0; }
+.ico { width: 24px; height: 24px; flex-shrink: 0; }
+.status-name { font-size: 17px; font-weight: bold; letter-spacing: 0.3px; }
+.pts { margin-left: auto; display: flex; align-items: center; gap: 10px; background: none; border: none; color: var(--text); cursor: pointer; padding: 2px; font-family: inherit; }
+.pts:hover { opacity: 0.8; }
+.pts svg { width: 28px; height: 28px; }
+.pts-num { background: var(--field); border: 1px solid var(--border); border-radius: 4px; padding: 4px 9px; font-size: 14px; min-width: 38px; text-align: center; }
+.pts.flash .pts-num { animation: flash 0.5s ease 2; border-color: var(--c-vermelho); color: var(--c-vermelho); }
+@keyframes flash { 50% { opacity: 0.3; } }
+
+/* Conteúdo */
+.scroll-area { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 14px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.scroll-area::-webkit-scrollbar { width: 6px; }
+.scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.sec-title { font-size: 15px; font-weight: bold; letter-spacing: 0.6px; color: var(--text); }
+.sec-row { display: flex; align-items: center; gap: 8px; }
+.divider { border-top: 1px solid var(--border); margin: 18px 0 16px; }
+.mini { width: 22px; height: 22px; background: var(--field); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 15px; line-height: 1; cursor: pointer; padding: 0; font-family: inherit; }
+.mini:hover { background: var(--hover); }
+
+/* Avatares */
+.avatar { width: 50px; height: 50px; border-radius: 50%; background: var(--field); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; cursor: pointer; color: var(--text-soft); transition: opacity 0.15s; }
+.avatar:hover { opacity: 0.8; }
+.avatar svg { width: 55%; height: 55%; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.empty { font-size: 20px; border-style: dashed; }
+.avatar.small { width: 44px; height: 44px; }
+.avatar.big { width: 56px; height: 56px; position: relative; }
+.avatar.big:hover { opacity: 1; }
+.avatar .ov { position: absolute; inset: 0; background: rgba(0,0,0,0.6); color: #fff; display: none; align-items: center; justify-content: center; }
+.avatar .ov svg { width: 45%; height: 45%; }
+.avatar.big:hover .ov { display: flex; }
+
+/* Pessoas importantes */
+.pessoas { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px 8px; margin-top: 14px; align-items: start; justify-items: center; }
+.pessoa { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
+.nome { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Laços */
+.lacos { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px 10px; margin-top: 14px; }
+.lacos:empty::after { content: "Nenhum laço criado."; font-size: 13px; color: var(--text-soft); }
+.laco { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.laco .col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+/* Níveis de conexão */
+.dots { display: flex; }
+.dot { width: 17px; height: 17px; padding: 0; border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.dot i { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--dot-empty); box-sizing: border-box; display: block; }
+.dot:hover i { border-color: var(--text-soft); }
+.dot i.on.z { background: var(--c-cinza); border-color: var(--c-cinza); }
+.dot i.on.g { background: var(--c-verde); border-color: var(--c-verde); }
+.dot i.on.r { background: var(--c-vermelho); border-color: var(--c-vermelho); }
+
+/* Telinha (modal) */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 50; padding: 12px; }
+.overlay.open { display: flex; }
+.modal { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; width: min(360px, 100%); max-height: 100%; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 10px; }
+.m-head { display: flex; align-items: center; justify-content: space-between; }
+.m-kicker { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-soft); font-weight: bold; }
+.m-tools { display: flex; gap: 12px; align-items: center; }
+.icon-btn { cursor: pointer; color: var(--text-soft); background: none; border: none; padding: 0; font-family: inherit; font-size: 18px; line-height: 1; display: flex; transition: opacity 0.15s; }
+.icon-btn:hover { opacity: 0.7; }
+.icon-btn svg { width: 17px; height: 17px; }
+.m-top { display: flex; align-items: center; gap: 12px; }
+.field { width: 100%; background: var(--field); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 6px; font-family: inherit; font-size: 12px; outline: none; transition: border-color 0.2s; }
+.field::placeholder { color: var(--text-soft); }
+.field:focus { border-color: #555555; }
+textarea.field { min-height: 90px; resize: vertical; line-height: 1.5; }
+.lbl { display: flex; flex-direction: column; gap: 4px; }
+.lbl span { font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-soft); }
+.hint { font-size: 11px; color: var(--text-soft); line-height: 1.4; }
+.m-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+.btn { font-family: inherit; font-size: 11px; color: var(--text); background: var(--field); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: background 0.15s; }
+.btn:hover { background: var(--hover); }
+.btn.danger { color: var(--danger); margin-right: auto; }
+
+@media (max-width: 620px) { .pessoas { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+
+<div class="status-container">
+    <div class="status">
+        <div class="status-header">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3l6 6-6 6-6-6z"/><path d="M6 14l6 6 6-6"/>
+            </svg>
+            <span class="status-name">CONEXÕES</span>
+            <button class="pts" id="pts" title="Pontos de Conexão">
+                <span class="pts-num" id="ptsNum">00</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="scroll-area">
+            <div class="sec-title">Pessoas Importantes</div>
+            <div class="pessoas" id="pessoas"></div>
+            <div class="divider"></div>
+            <div class="sec-row">
+                <div class="sec-title">Laços</div>
+                <button class="mini" id="btnLaco" title="Nova conexão">+</button>
+            </div>
+            <div class="lacos" id="lacos"></div>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+/* =====================================================
+   FIREBASE
+   ===================================================== */
+const firebaseConfig = {
+    apiKey: "AIzaSyD2qEEAPbzP1RFVnx2ijnEyCXB3VWzfz-8",
+    authDomain: "ficha-verum.firebaseapp.com",
+    databaseURL: "https://ficha-verum-default-rtdb.firebaseio.com",
+    projectId: "ficha-verum",
+    storageBucket: "ficha-verum.firebasestorage.app",
+    messagingSenderId: "281172832426",
+    appId: "1:281172832426:web:85442662439544144fa0d3"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const playerName = new URLSearchParams(window.location.search).get("player") || "jogador_teste";
+const dbRef = ref(db, `fichas/${playerName}_conexoes`);
+
+/* =====================================================
+   CONFIGURAÇÃO
+   ===================================================== */
+const SLOTS = 10;        // círculos de Pessoas Importantes
+const MAX_NIVEL = 3;     // níveis para cada lado (verde / vermelho)
+
+const PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3.5-6 7-6s7 2 7 6"/></svg>';
+const IMG_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>';
+
+/* =====================================================
+   UTILITÁRIOS E ESTADO
+   ===================================================== */
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const num = (v) => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : 0; };
+const uid = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const urlOk = (u) => /^(https?:\/\/|data:image\/)/i.test(u);
+
+// pessoas: { "0": conexão, "3": conexão }  |  lacos: [conexão]  |  conexão: { id, nome, obs, img, nivel }
+let st = { pontos: 0, max: 0, pessoas: {}, lacos: [] };
+let isInitialized = false;
+
+onValue(dbRef, (snap) => {
+    const d = snap.val() || {};
+    const pessoas = {};
+    for (let i = 0; i < SLOTS; i++) if (d.pessoas && d.pessoas[i]) pessoas[i] = d.pessoas[i];
+    const lacos = Array.isArray(d.lacos) ? d.lacos : Object.values(d.lacos || {});
+    st = { pontos: Math.max(0, num(d.pontos)), max: Math.max(0, num(d.max)), pessoas, lacos: lacos.filter(Boolean) };
+    render();
+    isInitialized = true;
+});
+function save() { if (isInitialized) set(dbRef, st); }
+
+/* =====================================================
+   NÍVEIS DE CONEXÃO
+   ===================================================== */
+function setNivel(conn, n) {
+    const atual = conn.nivel || 0;
+    if (n === atual) {
+        if (n === 0) return;
+        n = n > 0 ? n - 1 : n + 1;
+    }
+    const custo = Math.abs(n) - Math.abs(atual);   // negativo = devolve pontos
+    if (custo > st.pontos) {
+        const b = $("pts");
+        b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash");
+        return;
+    }
+    conn.nivel = n;
+    st.pontos -= custo;
+    save(); render();
+}
+
+function dots(conn) {
+    const w = el("div", "dots"), nv = conn.nivel || 0;
+    for (let n = -MAX_NIVEL; n <= MAX_NIVEL; n++) {
+        const b = el("button", "dot"), i = el("i");
+        const on = n === 0 || (n > 0 && n <= nv) || (n < 0 && n >= nv);
+        i.className = (on ? "on " : "") + (n === 0 ? "z" : n > 0 ? "g" : "r");
+        b.title = n === 0 ? "Neutro" : (n > 0 ? "+" + n : String(n));
+        b.append(i);
+        b.addEventListener("click", () => setNivel(conn, n));
+        w.append(b);
+    }
+    return w;
+}
+
+/* =====================================================
+   RENDERIZAÇÃO
+   ===================================================== */
+function fillAvatar(node, url) {
+    node.innerHTML = "";
+    if (url && urlOk(url)) {
+        const img = el("img");
+        img.referrerPolicy = "no-referrer";
+        img.addEventListener("error", () => { node.innerHTML = PERSON; });
+        img.src = url;
+        node.append(img);
+    } else node.innerHTML = PERSON;
+}
+
+function avatar(conn, cls, onClick) {
+    const a = el("div", "avatar " + cls);
+    fillAvatar(a, conn.img);
+    a.addEventListener("click", onClick);
+    return a;
+}
+
+function render() {
+    const pts = $("pts");
+    $("ptsNum").textContent = String(st.pontos).padStart(2, "0");
+    pts.title = "Pontos de Conexão" + (st.max ? " (máx. " + st.max + ")" : "") + " · clique para ajustar";
+
+    const pessoas = $("pessoas");
+    pessoas.innerHTML = "";
+    for (let i = 0; i < SLOTS; i++) {
+        const c = st.pessoas[i];
+        const open = () => openConn("p", i);
+        if (!c) {
+            const a = el("div", "avatar empty", "+");
+            a.title = "Nova conexão";
+            a.addEventListener("click", open);
+            pessoas.append(a);
+            continue;
+        }
+        const p = el("div", "pessoa"), nome = el("div", "nome", c.nome);
+        nome.title = c.nome;
+        nome.addEventListener("click", open);
+        p.append(avatar(c, "", open), nome, dots(c));
+        pessoas.append(p);
+    }
+
+    const lacos = $("lacos");
+    lacos.innerHTML = "";
+    st.lacos.forEach(c => {
+        const open = () => openConn("l", c.id);
+        const l = el("div", "laco"), col = el("div", "col"), nome = el("div", "nome", c.nome);
+        nome.title = c.nome;
+        nome.addEventListener("click", open);
+        col.append(nome, dots(c));
+        l.append(avatar(c, "small", open), col);
+        lacos.append(l);
+    });
+}
+
+/* =====================================================
+   TELINHA (observações, imagem, nome)
+   ===================================================== */
+const overlay = $("overlay"), modalBox = $("modal");
+function closeModal() { overlay.classList.remove("open"); }
+overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+function modalHead(kicker, extra) {
+    const head = el("div", "m-head"), tools = el("div", "m-tools");
+    const x = el("button", "icon-btn", "×");
+    x.addEventListener("click", closeModal);
+    if (extra) tools.append(extra);
+    tools.append(x);
+    head.append(el("div", "m-kicker", kicker), tools);
+    return head;
+}
+
+function openConn(tipo, key) {
+    const conn = tipo === "p" ? st.pessoas[key] : st.lacos.find(c => c.id === key);
+    const isNew = !conn;
+
+    const prev = el("div", "avatar big");
+    prev.title = "Clique para definir a imagem (URL)";
+    const nome = el("input", "field"); nome.placeholder = "Nome"; nome.value = conn ? conn.nome : "";
+    const top = el("div", "m-top");
+    const obs = el("textarea", "field"); obs.placeholder = "Observações"; obs.value = conn ? (conn.obs || "") : "";
+    const url = el("input", "field"); url.placeholder = "Cole o URL da imagem e aperte Enter"; url.value = conn ? (conn.img || "") : "";
+    url.style.display = "none";
+    const paint = () => { fillAvatar(prev, url.value.trim()); const ov = el("div", "ov"); ov.innerHTML = IMG_ICON; prev.append(ov); };
+    const editUrl = (on) => {
+        url.style.display = on ? "block" : "none";
+        nome.style.display = on ? "none" : "block";
+        if (on) { url.focus(); url.select(); } else paint();
+    };
+    paint();
+    prev.addEventListener("click", () => editUrl(true));
+    url.addEventListener("input", () => { url.style.borderColor = ""; });
+    url.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); e.stopPropagation(); editUrl(false); } });
+    url.addEventListener("blur", () => { if (url.style.display !== "none") editUrl(false); });
+    top.append(prev, nome, url);
+
+    const acts = el("div", "m-actions");
+    if (!isNew) {
+        const del = el("button", "btn danger", "Remover");
+        let armed = false;
+        del.addEventListener("click", () => {
+            if (!armed) { armed = true; del.textContent = "Confirmar?"; setTimeout(() => { armed = false; del.textContent = "Remover"; }, 3000); return; }
+            if (tipo === "p") delete st.pessoas[key];
+            else st.lacos = st.lacos.filter(c => c.id !== key);
+            closeModal(); save(); render();
+        });
+        acts.append(del);
+    }
+    const cancel = el("button", "btn", "Cancelar"), ok = el("button", "btn", "Salvar");
+    cancel.addEventListener("click", closeModal);
+    ok.addEventListener("click", () => {
+        const n = nome.value.trim(), img = url.value.trim();
+        if (!n) { nome.focus(); return; }
+        if (img && !urlOk(img)) { editUrl(true); url.style.borderColor = "var(--c-vermelho)"; return; }
+        const data = { nome: n, obs: obs.value.trim(), img };
+        if (conn) Object.assign(conn, data);
+        else if (tipo === "p") st.pessoas[key] = { id: uid(), ...data, nivel: 0 };
+        else st.lacos.push({ id: uid(), ...data, nivel: 0 });
+        closeModal(); save(); render();
+    });
+    acts.append(cancel, ok);
+
+    modalBox.innerHTML = "";
+    modalBox.append(modalHead(isNew ? "Nova conexão" : "Conexão"), top, obs, acts);
+    overlay.classList.add("open");
+    if (isNew) nome.focus();
+}
+
+/* =====================================================
+   PONTOS DE CONEXÃO (máximo = valor inicial)
+   ===================================================== */
+function labeled(text, input) {
+    const d = el("label", "lbl");
+    d.append(el("span", "", text), input);
+    return d;
+}
+
+function openPontos() {
+    const fMax = el("input", "field"), fAtual = el("input", "field");
+    [fMax, fAtual].forEach(f => { f.type = "number"; f.min = "0"; });
+    fMax.value = st.max || ""; fAtual.value = st.pontos;
+    fMax.placeholder = "Ex: 10";
+
+    const hint = el("div", "hint", "Ao definir um novo máximo, os pontos atuais passam a valer o máximo. Cada nível de conexão custa gasta 1 Ponto de Conexão");
+    const acts = el("div", "m-actions");
+    const cancel = el("button", "btn", "Cancelar"), ok = el("button", "btn", "Salvar");
+    cancel.addEventListener("click", closeModal);
+    ok.addEventListener("click", () => {
+        const max = Math.max(0, num(fMax.value)), atual = Math.max(0, num(fAtual.value));
+        const maxMudou = max !== st.max, atualMudou = atual !== st.pontos;
+        st.pontos = atualMudou ? atual : (maxMudou ? max : st.pontos);
+        st.max = max;
+        closeModal(); save(); render();
+    });
+    acts.append(cancel, ok);
+
+    modalBox.innerHTML = "";
+    modalBox.append(modalHead("Pontos de Conexão"), labeled("Máximo (valor inicial)", fMax), labeled("Atual", fAtual), hint, acts);
+    overlay.classList.add("open");
+    fMax.focus();
+}
+
+$("pts").addEventListener("click", openPontos);
+$("btnLaco").addEventListener("click", () => openConn("l", null));
+</script>
+</body>
+</html>
