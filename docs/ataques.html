@@ -38,7 +38,11 @@ html, body { background: var(--bg) !important; margin: 0 !important; padding: 0 
 .die-btn svg { width: 18px; height: 18px; }
 .die-btn.sm svg { width: 15px; height: 15px; }
 .card-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.dano-line, .k-line { display: flex; align-items: center; gap: 6px; }
+.k-line { display: flex; align-items: center; gap: 6px; height: 14px; }
+.k-line .die-btn { padding: 0; }
+.k-line .die-btn svg { width: 14px; height: 14px; }
+.k .short { display: none; }
+@media (max-width: 420px) { .k.has-short .full { display: none; } .k.has-short .short { display: inline; } }
 .k-line input { accent-color: var(--accent); margin: 0; width: 11px; height: 11px; cursor: pointer; opacity: 0.7; }
 .no-ammo { font-size: 10px; color: var(--c-vermelho); }
 .no-ammo.flash { animation: flash 0.5s ease 2; }
@@ -71,10 +75,12 @@ html, body { background: var(--bg) !important; margin: 0 !important; padding: 0 
 .icon-btn.confirm { color: var(--danger); font-size: 11px; font-weight: bold; }
 .pericia { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--text-soft); }
 .chip { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(127,127,127,0.15); }
-.c1 { color: var(--c-amarelo); } .c2 { color: var(--c-verde); } .c3 { color: var(--c-azul); }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px 12px; margin-top: 4px; }
-.stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.stat .k { font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-soft); }
+.c1 { color: var(--text); } .c2 { color: var(--c-verde); } .c3 { color: var(--c-azul); }
+.stats { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 10px; margin-top: 4px; }
+.sep { flex: 0 0 1px; width: 1px; height: 31px; background: rgba(127,127,127,0.3); }
+@media (max-width: 420px) { .sep { display: none; } .stats { justify-content: flex-start; gap: 8px 18px; } }
+.stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; max-width: 100%; flex: 0 0 auto; }
+.stat .k { line-height: 14px; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-soft); }
 .stat .v { font-size: 12px; color: var(--text); word-break: break-word; }
 .ammo { display: flex; align-items: center; gap: 6px; }
 .arrows { display: flex; flex-direction: column; }
@@ -283,25 +289,32 @@ function dano(a) {
 const ATTACK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.5l8.5 5v9l-8.5 5-8.5-5v-9z"/><path d="M12 8l4 7H8z"/></svg>';
 const DAMAGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>';
 
-function stat(k, v) {
+function lbl(full, short) {
+    const k = el("span", short ? "k has-short" : "k");
+    k.append(el("span", "full", full));
+    if (short) k.append(el("span", "short", short));
+    return k;
+}
+
+function stat(k, v, short) {
     const s = el("div", "stat");
-    s.append(el("span", "k", k), el("span", "v", v || "—"));
+    s.append(lbl(k, short), el("span", "v", v || "—"));
     return s;
 }
 
 function danoStat(a) {
-    const s = el("div", "stat"), row = el("div", "dano-line");
+    const s = el("div", "stat"), head = el("div", "k-line");
     const b = el("button", "die-btn sm");
     b.innerHTML = DAMAGE_ICON; b.title = "Rolar dano";
     b.addEventListener("click", () => dano(a));
-    row.append(el("span", "v", a.dano || "—"), b);
-    s.append(el("span", "k", "Dano"), row);
+    head.append(el("span", "k", "Dano"), b);
+    s.append(head, el("span", "v", a.dano || "—"));
     return s;
 }
 
 function ammoStat(a) {
     const s = el("div", "stat"), k = el("div", "k-line");
-    k.append(el("span", "k", "Munição"));
+    k.append(lbl("Munição", "Mun."));
     if (!(a.ammoMax > 0)) { s.append(k, el("span", "v", "—")); return s; }
     const cb = el("input");
     cb.type = "checkbox"; cb.checked = gastarMunicao; cb.title = "Gastar 1 de munição a cada ataque";
@@ -347,7 +360,8 @@ function card(a) {
     if (a.valor > 0) [a.valor, Math.floor(a.valor / 2), Math.floor(a.valor / 5)].forEach((v, i) => per.append(el("span", "chip c" + (i + 1), "[" + v + "]")));
 
     const stats = el("div", "stats");
-    stats.append(danoStat(a), stat("Alcance", a.alcance), stat("Usos", a.usos), stat("Defeito", a.defeito > 0 ? String(a.defeito) : ""), ammoStat(a));
+    [danoStat(a), stat("Alcance", a.alcance), stat("Usos", a.usos), stat("Defeito", a.defeito > 0 ? String(a.defeito) : "", "Def."), ammoStat(a)]
+        .forEach((n, i) => { if (i) stats.append(el("i", "sep")); stats.append(n); });
 
     c.append(head, per, stats);
     return c;
